@@ -10,3 +10,6 @@ viewModel.reportTitle = "This is the report title";	//fixed on 5/22 at 7:48a
 //the idea being that this would be similar to the sceneraio
 //where a change made by another user and commited
 viewModel.mychange = "yepper";
+
+//this change was made locally at the same time that the file viewmodel.js was created
+//it will be interesting to see what happens in the new windows githab app.
