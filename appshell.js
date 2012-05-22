@@ -9,7 +9,7 @@ viewModel.reportTitle = "This is the report title";	//fixed on 5/22 at 7:48a
 //[ml] here is a change I made directly on the website, so it won't be on my local machine
 //the idea being that this would be similar to the sceneraio
 //where a change made by another user and commited
-viewModel.mychange = "Blue"; //changing this at the same time as some website changes.
+viewModel.color = "Blue"; //changing this at the same time as some website changes.
 
 //this change was made locally at the same time that the file viewmodel.js was created
 //it will be interesting to see what happens in the new windows githab app.
