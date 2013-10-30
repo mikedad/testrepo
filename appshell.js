@@ -18,3 +18,6 @@ viewModel.color = "Blue"; //changing this at the same time as some website chang
 //then I will do the sync locally and see what happens.
 
 //Here is a new comment line
+
+//seems like its about time for some new code.  Hence the following line!
+viewModel.language = "javascript";
