@@ -16,3 +16,5 @@ viewModel.color = "Blue"; //changing this at the same time as some website chang
 
 //I am adding this line on the website, while I simultaneously edit and commit the file locally
 //then I will do the sync locally and see what happens.
+
+//Here is a new comment line
