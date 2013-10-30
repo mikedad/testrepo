@@ -4,7 +4,7 @@
 <p>I am curious if the readme viewer in github renders html</p>
 <p>And a new line in the readme too</p>
 
-<p>And I might as well change this file while I am at it.</p>
+<p>And I might as well <span style="color:red;">change this file while</span> I am at it.</p>
 <h3>Here is some h3 text I added on May 23, 2012</h3>
 <p>oh, and don't forget the endline (why do I care about endlines in 2012?)</p>
 
