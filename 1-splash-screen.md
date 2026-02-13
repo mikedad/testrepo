@@ -190,5 +190,6 @@ The splash screen is done when:
 1. `cargo build --target wasm32-unknown-unknown` compiles cleanly
 2. Opening `index.html` in a browser shows the splash screen
 3. Pixel art warrior, monster, and treasure are visible with animations
-4. 8-bit music plays after first user interaction
-5. "Press any key" text pulses on screen
+4. 8-bit music plays (immediately or after first tap)
+5. "Tap to continue" text pulses on screen
+6. Works on iPad via touch
