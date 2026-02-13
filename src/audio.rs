@@ -1,20 +1,21 @@
 use crate::song::{self, Note};
-
-extern "C" {
-    fn sapp_js_eval(js: *const u8, len: usize);
-}
-
-fn eval_js(code: &str) {
-    unsafe { sapp_js_eval(code.as_ptr(), code.len()) };
-}
+use web_sys::{AudioContext, OscillatorType};
 
 pub struct AudioManager {
+    ctx: Option<AudioContext>,
+    loop_duration: f32,
+    next_loop_time: f64,
     started: bool,
 }
 
 impl AudioManager {
     pub fn new() -> Self {
-        Self { started: false }
+        Self {
+            ctx: None,
+            loop_duration: song::loop_duration(),
+            next_loop_time: 0.0,
+            started: false,
+        }
     }
 
     /// Call on first user interaction to create AudioContext and start music.
@@ -22,54 +23,73 @@ impl AudioManager {
         if self.started {
             return;
         }
-        eval_js("window._dc_audio = new AudioContext();");
-        self.schedule_channel(song::MELODY, "square");
-        self.schedule_channel(song::BASS, "triangle");
-        self.schedule_channel(song::DRUMS, "square");
-        // Schedule looping
-        let loop_dur_ms = (song::loop_duration() * 1000.0) as u32;
-        let js = format!(
-            "window._dc_loop = setInterval(function() {{ {} {} {} }}, {});",
-            Self::channel_js(song::MELODY, "square"),
-            Self::channel_js(song::BASS, "triangle"),
-            Self::channel_js(song::DRUMS, "square"),
-            loop_dur_ms
-        );
-        eval_js(&js);
+        let ctx = match AudioContext::new() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        let start_time = ctx.current_time();
+        self.schedule_loop(&ctx, start_time);
+        self.next_loop_time = start_time + self.loop_duration as f64;
+        self.ctx = Some(ctx);
         self.started = true;
     }
 
+    /// Call each frame to schedule the next loop before the current one ends.
     pub fn update(&mut self) {
-        // Looping handled by JS setInterval
+        let ctx = match &self.ctx {
+            Some(c) => c,
+            None => return,
+        };
+        // Schedule next loop 0.5s before current one finishes
+        if ctx.current_time() >= self.next_loop_time - 0.5 {
+            self.schedule_loop(ctx, self.next_loop_time);
+            self.next_loop_time += self.loop_duration as f64;
+        }
     }
 
-    fn schedule_channel(&self, notes: &[Note], wave: &str) {
-        eval_js(&Self::channel_js(notes, wave));
+    fn schedule_loop(&self, ctx: &AudioContext, start: f64) {
+        self.schedule_channel(ctx, song::MELODY, OscillatorType::Square, start);
+        self.schedule_channel(ctx, song::BASS, OscillatorType::Triangle, start);
+        self.schedule_channel(ctx, song::DRUMS, OscillatorType::Square, start);
     }
 
-    fn channel_js(notes: &[Note], wave: &str) -> String {
-        let mut js = String::with_capacity(512);
-        js.push_str("(function(){var c=window._dc_audio;if(!c)return;var t=c.currentTime+0.05;");
+    fn schedule_channel(
+        &self,
+        ctx: &AudioContext,
+        notes: &[Note],
+        wave: OscillatorType,
+        start: f64,
+    ) {
+        let dest = ctx.destination();
+        let mut time = start;
 
         for note in notes {
             if note.freq > 0.0 && note.volume > 0.0 {
-                js.push_str(&format!(
-                    "var o=c.createOscillator();var g=c.createGain();\
-                     o.type='{}';o.frequency.value={:.1};\
-                     g.gain.setValueAtTime(0,t);\
-                     g.gain.linearRampToValueAtTime({:.2},t+0.01);\
-                     g.gain.setValueAtTime({:.2},t+{:.3}-0.02);\
-                     g.gain.linearRampToValueAtTime(0,t+{:.3});\
-                     o.connect(g);g.connect(c.destination);\
-                     o.start(t);o.stop(t+{:.3});",
-                    wave, note.freq,
-                    note.volume, note.volume,
-                    note.duration, note.duration, note.duration
-                ));
+                // Create oscillator + gain for each note
+                if let (Ok(osc), Ok(gain)) = (
+                    ctx.create_oscillator(),
+                    ctx.create_gain(),
+                ) {
+                    osc.set_type(wave);
+                    let _ = osc.frequency().set_value(note.freq);
+                    let _ = gain.gain().set_value(note.volume);
+
+                    // Envelope: quick attack, sustain, quick release to avoid clicks
+                    let attack = 0.01;
+                    let release = 0.02;
+                    let _ = gain.gain().set_value_at_time(0.0, time);
+                    let _ = gain.gain().linear_ramp_to_value_at_time(note.volume, time + attack);
+                    let end = time + note.duration as f64;
+                    let _ = gain.gain().set_value_at_time(note.volume, end - release);
+                    let _ = gain.gain().linear_ramp_to_value_at_time(0.0, end);
+
+                    let _ = osc.connect_with_audio_node(&gain);
+                    let _ = gain.connect_with_audio_node(&dest);
+                    let _ = osc.start_with_when(time);
+                    let _ = osc.stop_with_when(end + 0.01);
+                }
             }
-            js.push_str(&format!("t+={:.3};", note.duration));
+            time += note.duration as f64;
         }
-        js.push_str("})();");
-        js
     }
 }
