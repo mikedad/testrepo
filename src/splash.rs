@@ -250,7 +250,7 @@ impl SplashScreen {
     fn draw_prompt(&self, sw: f32, sh: f32) {
         let alpha = ((self.time * 2.0).sin() * 0.4 + 0.6) as f32;
         let color = Color::new(1.0, 1.0, 1.0, alpha);
-        let text = "~ Press any key to start ~";
+        let text = "~ Tap to continue ~";
         let font_size = (sw / 320.0 * 7.0).max(14.0);
         let dims = measure_text(text, None, font_size as u16, 1.0);
         draw_text(text, (sw - dims.width) / 2.0, sh * 0.88, font_size, color);
