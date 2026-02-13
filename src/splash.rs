@@ -116,21 +116,53 @@ impl SplashScreen {
         draw_rectangle(cx - s * 2.0, cy - s * 4.0 + breathe, s * 0.5, s * 2.5, SKIN);
         draw_rectangle(cx + s * 1.5, cy - s * 4.0 + breathe, s * 0.5, s * 2.5, SKIN);
 
-        // Sword (right hand) with glint animation
-        let sword_x = cx + s * 2.0;
-        let sword_top = cy - s * 6.0 + breathe;
-        // Blade
-        draw_rectangle(sword_x, sword_top, s * 0.4, s * 4.5, SILVER);
-        // Guard
-        draw_rectangle(sword_x - s * 0.5, cy - s * 1.5 + breathe, s * 1.5, s * 0.4, GOLD);
-        // Handle
-        draw_rectangle(sword_x, cy - s * 1.1 + breathe, s * 0.4, s * 1.2, CHEST_BROWN);
+        // Sword (right hand) — swings forward on tap
+        let swing_progress = if self.swing_timer > 0.0 {
+            // 0→1→0 over SWING_DURATION (forward then back)
+            let t = 1.0 - (self.swing_timer / SWING_DURATION);
+            if t < 0.5 { t * 2.0 } else { (1.0 - t) * 2.0 }
+        } else {
+            0.0
+        };
 
-        // Sword glint
-        let glint_phase = (self.time * 3.0).sin();
-        if glint_phase > 0.7 {
-            let glint_y = sword_top + (self.time * 60.0 % (s * 4.0));
-            draw_rectangle(sword_x - s * 0.1, glint_y, s * 0.6, s * 0.3, WHITE);
+        // Pivot point is at the warrior's hand
+        let pivot_x = cx + s * 1.5;
+        let pivot_y = cy - s * 1.5 + breathe;
+
+        if swing_progress > 0.01 {
+            // Swinging: sword goes from vertical to horizontal
+            // Horizontal sword (pointing right)
+            let blade_len = s * 4.5;
+            let offset_x = blade_len * swing_progress;
+            let offset_y = -blade_len * (1.0 - swing_progress);
+            // Blade (horizontal when fully swung)
+            draw_rectangle(
+                pivot_x,
+                pivot_y + offset_y,
+                s * 0.4 + offset_x * 0.8,
+                s * 0.4 + (-offset_y) * 0.1,
+                SILVER,
+            );
+            // Flash effect at peak swing
+            if swing_progress > 0.8 {
+                draw_rectangle(pivot_x, pivot_y - s * 2.0, s * 6.0, s * 0.3, WHITE);
+            }
+        } else {
+            // Idle: sword upright
+            let sword_x = cx + s * 2.0;
+            let sword_top = cy - s * 6.0 + breathe;
+            draw_rectangle(sword_x, sword_top, s * 0.4, s * 4.5, SILVER);
+            // Guard
+            draw_rectangle(sword_x - s * 0.5, pivot_y, s * 1.5, s * 0.4, GOLD);
+            // Handle
+            draw_rectangle(sword_x, pivot_y + s * 0.4, s * 0.4, s * 1.2, CHEST_BROWN);
+
+            // Sword glint
+            let glint_phase = (self.time * 3.0).sin();
+            if glint_phase > 0.7 {
+                let glint_y = sword_top + (self.time * 60.0 % (s * 4.0));
+                draw_rectangle(sword_x - s * 0.1, glint_y, s * 0.6, s * 0.3, WHITE);
+            }
         }
 
         // Legs
