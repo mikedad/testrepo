@@ -174,7 +174,7 @@ The `cpal` output stream is created on first user keypress/click. Before interac
 | `Cargo.toml` | Project config, macroquad dependency |
 | `src/main.rs` | Entry point, game loop, splash screen state |
 | `src/splash.rs` | Splash screen rendering and animation logic |
-| `src/audio.rs` | PCM WAV renderer, macroquad audio playback |
+| `src/audio.rs` | Real-time synth engine via `cpal`, waveform generation |
 | `src/song.rs` | Intro song note data (melody, bass, drums arrays) |
 | `web/index.html` | HTML wrapper for WASM |
 
