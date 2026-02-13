@@ -102,7 +102,7 @@ This project follows **spec-driven development**. All work flows through natural
 ## Conventions
 
 - **Be concise but complete** — Code, comments, and documentation should be brief and to the point while covering everything necessary. No fluff, no gaps.
-- **No JavaScript** — This is a pure WASM project. All logic lives in Rust. The only JS allowed is the minimal macroquad loader (`mq_js_bundle.js`) which is a third-party dependency. Never write custom JavaScript.
+- **No JavaScript. No exceptions.** — This is a pure WASM project. All logic lives in Rust. The only JS allowed is the minimal macroquad loader (`mq_js_bundle.js`) which is a third-party dependency. Never write custom JavaScript. Never use `wasm-bindgen`, `web-sys`, or `js-sys` as dependencies — directly or transitively. Any crate that depends on these (e.g. `cpal`) is incompatible with macroquad's WASM loader and must not be used. All proposed solutions must work with macroquad's pure WASM pipeline.
 - **iPad compatible** — The game must work on iPad via touch input. No keyboard required for core interactions. Use touch/tap instead of key presses where possible.
 - Use macroquad's built-in game loop (`#[macroquad::main]` attribute)
 - Tile-based rendering — all game objects align to a grid
