@@ -159,9 +159,10 @@ The `cpal` output stream is created on first user keypress/click. Before interac
 - [ ] Add idle animations (breathing, sway, shimmer)
 - [ ] Add pulsing "Press any key" text
 - [ ] Define intro song as note data (melody, bass, drums) in `song.rs`
-- [ ] Implement `render_to_wav()` PCM synthesizer in `audio.rs` (square, triangle, noise)
-- [ ] Load generated WAV via `macroquad::audio::load_sound_from_bytes()`
-- [ ] Play looped audio on first user interaction (browser autoplay policy)
+- [ ] Implement real-time synth via `cpal` audio callback in `audio.rs`
+- [ ] Generate square, triangle, and noise waveforms sample-by-sample
+- [ ] Loop song seamlessly when end is reached
+- [ ] Start audio stream on first user interaction (browser autoplay policy)
 - [ ] Create `web/index.html` wrapper
 - [ ] Test in browser via WASM
 - [ ] Deploy to GitHub Pages
