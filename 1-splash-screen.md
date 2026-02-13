@@ -144,12 +144,20 @@ macroquad = "0.4"
 
 Audio playback strategy (handles browser autoplay policy):
 
-1. On startup: generate WAV, load via `load_sound_from_bytes`, call `play_sound` immediately
-2. If browser blocks autoplay (silent failure), the sound is already loaded and ready
-3. On first touch/click/tap: call `play_sound` again as a retry
-4. macroquad's internal WebAudio context gets resumed by user interaction with the canvas
+1. On startup: generate WAV, load via `load_sound_from_bytes`. Do NOT attempt playback yet (browser will block it and we can't detect the failure).
+2. On first touch/click/tap: call `play_sound`. This is the real play attempt — after user interaction, the browser allows audio.
+3. If `load_sound_from_bytes` fails, capture the error for display.
 
 The splash screen uses touch-friendly input — "Tap to continue" instead of "Press any key". All interaction works via touch (mouse clicks also work on desktop).
+
+### Audio Debug Display
+
+Any audio errors are displayed on screen above the build timestamp. This helps diagnose issues in deployed builds where we can't see a console. The `AudioManager` exposes a `status()` method that returns a string like:
+- `"audio: loaded, waiting for tap"` — WAV loaded, not yet played
+- `"audio: playing"` — playing successfully
+- `"audio: load error: <message>"` — `load_sound_from_bytes` failed
+
+This text is shown in small faint text, same style as the build timestamp.
 
 ## Implementation Checklist
 
