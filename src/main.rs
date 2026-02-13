@@ -20,19 +20,19 @@ fn window_conf() -> Conf {
 async fn main() {
     let mut splash = SplashScreen::new();
     let mut audio_mgr = AudioManager::new().await;
-
-    // Attempt autoplay immediately
-    audio_mgr.play();
+    let mut audio_started = false;
 
     loop {
         splash.update();
 
-        // Retry audio on first user interaction (if autoplay was blocked)
-        if splash.user_interacted() && !audio_mgr.is_playing() {
+        // Play audio on first user interaction (satisfies browser autoplay policy)
+        if splash.user_interacted() && !audio_started {
             audio_mgr.play();
+            audio_started = true;
         }
 
         splash.draw();
+        splash.draw_status(audio_mgr.status());
         next_frame().await;
     }
 }
