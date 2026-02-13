@@ -155,9 +155,11 @@ The splash screen uses touch-friendly input — "Tap to continue" instead of "Pr
 ### Audio Debug Display
 
 Any audio errors are displayed on screen above the build timestamp. This helps diagnose issues in deployed builds where we can't see a console. The `AudioManager` exposes a `status()` method that returns a string like:
-- `"audio: loaded, waiting for tap"` — WAV loaded, not yet played
-- `"audio: playing"` — playing successfully
+- `"audio: wav ready, waiting for tap"` — WAV bytes generated, not yet loaded into audio system
+- `"audio: loading..."` — `load_sound_from_bytes` in progress (after tap)
+- `"audio: playing"` — loaded and playing successfully
 - `"audio: load error: <message>"` — `load_sound_from_bytes` failed
+- `"audio: render error"` — WAV generation failed
 
 This text is shown in small faint text, same style as the build timestamp.
 
