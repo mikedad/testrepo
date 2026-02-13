@@ -79,20 +79,25 @@ finn/
 
 This project follows **spec-driven development**. All work flows through natural language conversations with Claude to produce numbered spec files before any code is written.
 
+### CRITICAL: Follow the process. No exceptions.
+
+**Never skip steps. Never write code before the spec is discussed and agreed upon.** If a problem is discovered (e.g. a deployment issue, a broken build), the response is to talk it through first, update the spec, then code the fix. Jumping straight to code — even for "quick fixes" — violates the process.
+
 ### Workflow
 
-1. **Spec** — Create a numbered spec file (e.g. `1-splash-screen.md`, `2-dungeon-gen.md`). Discuss requirements in natural language until the spec is complete. The spec is the source of truth.
-2. **Code** — Implement from the spec. All coding follows directly from what the spec describes.
-3. **Unit Tests** — Write tests for the new code.
-4. **Compile & Test Locally** — `cargo build` and `cargo test` must both pass.
-5. **Build for Web** — `cargo build --release --target wasm32-unknown-unknown`, copy WASM to `web/`, verify in browser.
+1. **Discuss** — Talk through the feature or problem in natural language. Ask questions. Explore options.
+2. **Spec** — Create or update a numbered spec file (e.g. `1-splash-screen.md`, `2-dungeon-gen.md`). The spec is the source of truth.
+3. **Code** — Implement from the spec. All coding follows directly from what the spec describes.
+4. **Unit Tests** — Write tests for the new code.
+5. **Compile & Test Locally** — `cargo build` and `cargo test` must both pass.
+6. **Build for Web** — `cargo build --release --target wasm32-unknown-unknown`, copy WASM to `web/`, verify in browser.
 
 ### Spec Files
 
 - Numbered sequentially: `1-splash-screen.md`, `2-dungeon-gen.md`, etc.
 - Each spec captures all details for that feature — requirements, design, architecture, checklist.
 - Specs are cumulative — later specs build on earlier ones. Together they form the full project history.
-- No code is written until the spec is agreed upon.
+- No code is written until the spec is discussed and agreed upon.
 
 ## Conventions
 
