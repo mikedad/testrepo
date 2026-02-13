@@ -1,7 +1,9 @@
+#[cfg(target_arch = "wasm32")]
 mod audio;
 mod song;
 mod splash;
 
+#[cfg(target_arch = "wasm32")]
 use audio::AudioManager;
 use macroquad::prelude::*;
 use splash::SplashScreen;
