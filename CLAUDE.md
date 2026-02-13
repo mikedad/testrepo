@@ -1,4 +1,4 @@
-# Project: Rust WASM Roguelike Dungeon Crawler
+# Project: Dungeon Creator — Rust WASM Roguelike Dungeon Crawler
 
 ## Overview
 
