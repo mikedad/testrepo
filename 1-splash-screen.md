@@ -131,7 +131,7 @@ The audio callback in `audio.rs`:
   - Melody — square wave
   - Bass — triangle wave
   - Percussion — white noise bursts
-- **Playback:** Stream starts on first user interaction to satisfy browser autoplay policy. Loops seamlessly.
+- **Playback:** Stream starts automatically when the splash screen loads. Loops seamlessly. Note: some browsers may block autoplay — if so, audio begins on first touch/click.
 
 ### Dependencies
 
