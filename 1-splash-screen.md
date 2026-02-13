@@ -179,6 +179,7 @@ The splash screen uses touch-friendly input — "Tap to continue" instead of "Pr
 
 | File | Purpose |
 |------|---------|
+| `build.rs` | Captures compile timestamp as env var |
 | `Cargo.toml` | Project config, macroquad dependency |
 | `src/main.rs` | Entry point, game loop, splash screen state |
 | `src/splash.rs` | Splash screen rendering and animation logic |
