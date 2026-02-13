@@ -62,26 +62,31 @@ Keep it retro. Suggested base palette (adjustable):
 - Treasure: gold (`#ffd700`), brown chest (`#8b4513`)
 - Prompt text: white with alpha fade
 
-## Audio: 8-Bit Intro Song (Pure Rust PCM + macroquad audio)
+## Audio: 8-Bit Intro Song (Real-Time Synthesis via `cpal`)
 
 ### Approach
 
-No audio files. No JavaScript. No `wasm-bindgen` or `web-sys`. The intro song is defined as note data in Rust, rendered into a **raw PCM WAV byte buffer** at startup using pure math, and played through **macroquad's built-in audio system** (`load_sound_from_bytes`). macroquad already handles the WebAudio bridge internally for WASM — we just hand it a WAV.
+No audio files. No JavaScript. No pre-rendered WAV buffers. The intro song is defined as note data in Rust and **synthesized in real time** using the `cpal` crate. `cpal` provides a callback-based audio stream — the browser's WebAudio system asks for samples and our synth generates them on the fly. This is true real-time audio synthesis, pure Rust.
+
+### Why `cpal` instead of macroquad audio
+
+macroquad's audio (`macroquad::audio`) is designed for loading and playing audio files. It doesn't expose a real-time sample callback. `cpal` is the standard Rust crate for low-level audio I/O and has a WASM/WebAudio backend. It gives us a callback where we fill audio buffers sample-by-sample — exactly what a synthesizer needs.
 
 ### Architecture
 
 ```
-Song Data (Rust)       PCM Renderer (Rust)        macroquad audio
+Song Data (Rust)       Real-Time Synth (Rust)     cpal (WASM backend)
 ┌──────────────┐      ┌──────────────────┐      ┌──────────────────┐
-│ Note structs │─────▶│ render_to_wav()   │─────▶│ load_sound_from  │
-│ freq, dur,   │      │                  │      │ _bytes()         │
-│ vol, wave    │      │ For each sample: │      │                  │
-│              │      │  square wave     │      │ play_sound()     │
-│ MELODY[]     │      │  triangle wave   │      │ (looped)         │
-│ BASS[]       │      │  noise channel   │      │                  │
-│ DRUMS[]      │      │  → mix to i16    │      │ Handles WebAudio │
-└──────────────┘      │  → WAV bytes     │      │ internally       │
-                      └──────────────────┘      └──────────────────┘
+│ Note structs │─────▶│ Audio callback:   │─────▶│ WebAudio via     │
+│ freq, dur,   │      │                  │      │ cpal's WASM      │
+│ vol, wave    │      │ "Give me next N  │      │ backend           │
+│              │      │  samples"        │      │                  │
+│ MELODY[]     │      │                  │      │ AudioWorklet /   │
+│ BASS[]       │      │ Walk note arrays │      │ ScriptProcessor  │
+│ DRUMS[]      │      │ Generate square, │      │ → speakers       │
+└──────────────┘      │ triangle, noise  │      └──────────────────┘
+                      │ Mix & output     │
+                      └──────────────────┘
 ```
 
 ### Song Definition Format
@@ -95,44 +100,51 @@ struct Note {
     volume: f32,    // 0.0 to 1.0
 }
 
-// Three channels, rendered in parallel into one mixed buffer:
+// Three channels, synthesized in parallel in the audio callback:
 const MELODY: &[Note] = &[...];  // square wave — main theme
 const BASS: &[Note] = &[...];    // triangle wave — bass line
 const DRUMS: &[Note] = &[...];   // noise — percussion hits
 ```
 
-### PCM Rendering
+### Real-Time Synthesis
 
-A `render_to_wav()` function in `audio.rs` does the synthesis:
+The audio callback in `audio.rs`:
 
-1. Allocate a sample buffer (sample rate: 44100 Hz, 16-bit mono)
-2. For each channel, walk the note array and generate samples:
-   - **Melody** — square wave: `if (phase % period) < half_period { +amp } else { -amp }`
-   - **Bass** — triangle wave: sawtooth-based triangle formula
-   - **Drums** — white noise bursts: random values scaled by amplitude
-3. Mix all three channels by summing samples (with clipping to i16 range)
-4. Prepend a valid WAV header (44 bytes: RIFF, fmt chunk, data chunk)
-5. Return the complete WAV as `Vec<u8>`
+1. `cpal` opens a default output stream with a sample callback
+2. Each call asks for N samples to fill a buffer
+3. For each sample, the synth tracks playback position across all three channels:
+   - **Melody** — square wave: `if phase < 0.5 { +amp } else { -amp }`
+   - **Bass** — triangle wave: linear ramp up/down per period
+   - **Drums** — white noise bursts via LFSR
+4. Apply per-note envelope (10ms attack, 20ms release) to avoid clicks
+5. Mix channels by summing, clamp to output range
+6. When all notes in a channel are exhausted, loop back to the start
 
 ### Music Specs
 
 - **Style:** 8-bit chiptune, heroic/adventurous feel
 - **Tempo:** ~140 BPM
 - **Length:** 15-30 second loop
-- **Sample rate:** 44100 Hz, 16-bit mono
+- **Sample rate:** determined by `cpal` default device (typically 44100 or 48000 Hz)
 - **Channels:**
   - Melody — square wave
   - Bass — triangle wave
   - Percussion — white noise bursts
-- **Playback:** `macroquad::audio::play_sound()` with `looped: true`. Starts on first user interaction to satisfy browser autoplay policy.
+- **Playback:** Stream starts on first user interaction to satisfy browser autoplay policy. Loops seamlessly.
 
 ### Dependencies
 
-**None beyond macroquad.** No `wasm-bindgen`, no `web-sys`, no `js-sys`. The only dependency is `macroquad = "0.4"` which already provides `macroquad::audio`.
+```toml
+[dependencies]
+macroquad = "0.4"
+cpal = "0.15"
+```
+
+No `wasm-bindgen`, no `web-sys`, no `js-sys`. `cpal` handles the WASM/WebAudio bridge internally.
 
 ### Browser Autoplay Handling
 
-macroquad's audio plays through the browser's WebAudio internally. Audio starts on first user keypress/click. Before interaction, the splash screen shows "~ Press any key to start ~".
+The `cpal` output stream is created on first user keypress/click. Before interaction, the splash screen shows "~ Press any key to start ~".
 
 ## Implementation Checklist
 
