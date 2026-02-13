@@ -1,5 +1,5 @@
 use crate::song::{self, Note};
-use web_sys::{AudioContext, OscillatorNode, OscillatorType, GainNode};
+use web_sys::{AudioContext, OscillatorType};
 
 pub struct AudioManager {
     ctx: Option<AudioContext>,
