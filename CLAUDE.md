@@ -75,6 +75,25 @@ finn/
     └── mq_js_bundle.js  # macroquad JS loader
 ```
 
+## Development Process: Spec-Driven Development
+
+This project follows **spec-driven development**. All work flows through natural language conversations with Claude to produce numbered spec files before any code is written.
+
+### Workflow
+
+1. **Spec** — Create a numbered spec file (e.g. `1-splash-screen.md`, `2-dungeon-gen.md`). Discuss requirements in natural language until the spec is complete. The spec is the source of truth.
+2. **Code** — Implement from the spec. All coding follows directly from what the spec describes.
+3. **Unit Tests** — Write tests for the new code.
+4. **Compile & Test Locally** — `cargo build` and `cargo test` must both pass.
+5. **Build for Web** — `cargo build --release --target wasm32-unknown-unknown`, copy WASM to `web/`, verify in browser.
+
+### Spec Files
+
+- Numbered sequentially: `1-splash-screen.md`, `2-dungeon-gen.md`, etc.
+- Each spec captures all details for that feature — requirements, design, architecture, checklist.
+- Specs are cumulative — later specs build on earlier ones. Together they form the full project history.
+- No code is written until the spec is agreed upon.
+
 ## Conventions
 
 - **Be concise but complete** — Code, comments, and documentation should be brief and to the point while covering everything necessary. No fluff, no gaps.
