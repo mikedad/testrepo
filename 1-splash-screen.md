@@ -143,9 +143,9 @@ cpal = "0.15"
 
 No `wasm-bindgen`, no `web-sys`, no `js-sys`. `cpal` handles the WASM/WebAudio bridge internally.
 
-### Browser Autoplay Handling
+### Autoplay & iPad Support
 
-The `cpal` output stream is created on first user keypress/click. Before interaction, the splash screen shows "~ Press any key to start ~".
+Audio starts automatically on load. If the browser blocks autoplay, the audio will begin on the first touch/click. The splash screen uses touch-friendly input — "Tap to continue" instead of "Press any key". All interaction works via touch (mouse clicks also work on desktop).
 
 ## Implementation Checklist
 
