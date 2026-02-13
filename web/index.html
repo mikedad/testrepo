@@ -24,34 +24,7 @@
 </head>
 <body>
     <canvas id="glcanvas" tabindex="1"></canvas>
-    <script>
-        // macroquad WASM loader
-        var gl;
-        var wasm_memory;
-
-        // These are the JS functions macroquad expects to be available
-        register_plugins = (importObject) => {
-            // web-sys needs these for WebAudio
-            importObject.env = importObject.env || {};
-        };
-
-        miniquad_add_plugin = (plugin) => {};
-
-        load = async () => {
-            const canvas = document.getElementById("glcanvas");
-            const importObject = {
-                env: {}
-            };
-
-            // Load the macroquad JS glue
-            const gl_js = await fetch("./mq_js_bundle.js");
-            const gl_js_text = await gl_js.text();
-            eval(gl_js_text);
-
-            const wasm = await load("./dungeon_creator.wasm");
-        };
-
-        load();
-    </script>
+    <script src="mq_js_bundle.js"></script>
+    <script>load("dungeon_creator.wasm");</script>
 </body>
 </html>
