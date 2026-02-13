@@ -138,8 +138,10 @@ The `AudioContext` is created on first user keypress/click. This satisfies the b
 - [ ] Draw treasure chest sprite using primitives
 - [ ] Add idle animations (breathing, sway, shimmer)
 - [ ] Add pulsing "Press any key" text
-- [ ] Create or source 8-bit intro music
-- [ ] Integrate audio playback with browser autoplay handling
+- [ ] Define intro song as note data (melody, bass, drums)
+- [ ] Implement WebAudio synthesizer via `web-sys` / `wasm-bindgen`
+- [ ] Schedule oscillators for each channel with looping
+- [ ] Handle browser autoplay policy (start audio on first interaction)
 - [ ] Create `web/index.html` wrapper
 - [ ] Test in browser via WASM
 - [ ] Deploy to GitHub Pages
