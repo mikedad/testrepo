@@ -162,4 +162,10 @@ mod tests {
         // 1 second at 44100 Hz, 16-bit mono = 88200 data bytes + 44 header
         assert_eq!(wav.len(), 44 + 44100 * 2);
     }
+
+    #[test]
+    fn write_test_tone_file() {
+        let wav = render_test_tone();
+        std::fs::write("web/test_tone.wav", &wav).unwrap();
+    }
 }
