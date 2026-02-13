@@ -180,7 +180,7 @@ The splash screen uses touch-friendly input — "Tap to continue" instead of "Pr
 | `Cargo.toml` | Project config, macroquad dependency |
 | `src/main.rs` | Entry point, game loop, splash screen state |
 | `src/splash.rs` | Splash screen rendering and animation logic |
-| `src/audio.rs` | Real-time synth engine via `cpal`, waveform generation |
+| `src/audio.rs` | WAV renderer (in-memory), macroquad audio playback with autoplay retry |
 | `src/song.rs` | Intro song note data (melody, bass, drums arrays) |
 | `web/index.html` | HTML wrapper for WASM |
 
