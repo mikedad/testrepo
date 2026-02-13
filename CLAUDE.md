@@ -77,6 +77,7 @@ finn/
 
 ## Conventions
 
+- **Be concise but complete** — Code, comments, and documentation should be brief and to the point while covering everything necessary. No fluff, no gaps.
 - Use macroquad's built-in game loop (`#[macroquad::main]` attribute)
 - Tile-based rendering — all game objects align to a grid
 - Real-time gameplay (not turn-based) with smooth movement
