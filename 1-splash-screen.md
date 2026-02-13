@@ -146,10 +146,10 @@ macroquad's audio plays through the browser's WebAudio internally. Audio starts 
 - [ ] Draw treasure chest sprite using primitives
 - [ ] Add idle animations (breathing, sway, shimmer)
 - [ ] Add pulsing "Press any key" text
-- [ ] Define intro song as note data (melody, bass, drums)
-- [ ] Implement WebAudio synthesizer via `web-sys` / `wasm-bindgen`
-- [ ] Schedule oscillators for each channel with looping
-- [ ] Handle browser autoplay policy (start audio on first interaction)
+- [ ] Define intro song as note data (melody, bass, drums) in `song.rs`
+- [ ] Implement `render_to_wav()` PCM synthesizer in `audio.rs` (square, triangle, noise)
+- [ ] Load generated WAV via `macroquad::audio::load_sound_from_bytes()`
+- [ ] Play looped audio on first user interaction (browser autoplay policy)
 - [ ] Create `web/index.html` wrapper
 - [ ] Test in browser via WASM
 - [ ] Deploy to GitHub Pages
