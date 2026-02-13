@@ -163,6 +163,18 @@ Any audio errors are displayed on screen above the build timestamp. This helps d
 
 This text is shown in small faint text, same style as the build timestamp.
 
+### Audio Debugging: Test Tone
+
+To isolate audio issues on Safari/iPad, temporarily replace the full song with a minimal test tone: a 1-second 440Hz sine wave. This is the simplest possible WAV — if Safari's `decodeAudioData` can't handle it, nothing will work and the issue is in macroquad's audio pipeline on Safari.
+
+The `render_to_wav()` function generates the test tone instead of the full song. The status display shows `"audio: TEST TONE wav ready"` so it's clear the test build is deployed. The WAV is still 44100 Hz, 16-bit, mono PCM — same format, just simpler content.
+
+Additionally, the `AudioManager` tracks whether a second tap occurred after loading. macroquad's JS audio plugin creates the AudioContext during `load_sound_from_bytes`, but since this happens inside an `await` (not directly in the tap handler), the AudioContext may start "suspended". The JS plugin sets up touch/mousedown/keydown listeners to call `audioContext.resume()`, but these only fire on **subsequent** interactions. The status display shows:
+- `"audio: playing (tap again to resume)"` — after first tap loads and plays
+- `"audio: playing (resumed)"` — after a second tap fires the resume listeners
+
+This helps determine if the AudioContext suspension is the root cause.
+
 ## Implementation Checklist
 
 - [ ] Initialize Cargo project with macroquad dependency
