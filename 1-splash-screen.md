@@ -162,7 +162,9 @@ The splash screen uses touch-friendly input — "Tap to continue" instead of "Pr
 - [ ] Draw monster sprite using primitives
 - [ ] Draw treasure chest sprite using primitives
 - [ ] Add idle animations (breathing, sway, shimmer)
-- [ ] Add pulsing "Press any key" text
+- [ ] Add pulsing "Tap to continue" text
+- [ ] Add `build.rs` to capture compile timestamp
+- [ ] Display build timestamp in small text at bottom-right of screen
 - [ ] Define intro song as note data (melody, bass, drums) in `song.rs`
 - [ ] Implement `render_to_wav()` in `audio.rs` — synthesize WAV in memory from note data
 - [ ] Generate square, triangle, and noise waveforms with per-note envelopes
