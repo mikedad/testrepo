@@ -62,30 +62,31 @@ Keep it retro. Suggested base palette (adjustable):
 - Treasure: gold (`#ffd700`), brown chest (`#8b4513`)
 - Prompt text: white with alpha fade
 
-## Audio: 8-Bit Intro Song (WebAudio Synthesizer)
+## Audio: 8-Bit Intro Song (Pure Rust PCM + macroquad audio)
 
 ### Approach
 
-No audio files. The intro song is defined as note data in Rust and synthesized at runtime using the browser's **WebAudio API** via `web-sys` and `wasm-bindgen`. The browser's built-in `OscillatorNode` generates square, triangle, and noise waveforms — authentic 8-bit sound with zero file overhead.
+No audio files. No JavaScript. No `wasm-bindgen` or `web-sys`. The intro song is defined as note data in Rust, rendered into a **raw PCM WAV byte buffer** at startup using pure math, and played through **macroquad's built-in audio system** (`load_sound_from_bytes`). macroquad already handles the WebAudio bridge internally for WASM — we just hand it a WAV.
 
 ### Architecture
 
 ```
-Song Data (Rust)          WebAudio API (Browser)
-┌──────────────┐         ┌─────────────────────┐
-│ Note structs │───JS───▶│ AudioContext         │
-│ freq, dur,   │  FFI    │ ├─ OscillatorNode    │
-│ vol, wave    │         │ │  (square/triangle)  │
-│              │         │ ├─ GainNode (volume)  │
-│ MELODY[]     │         │ └─ destination        │
-│ BASS[]       │         │    (speakers)         │
-│ DRUMS[]      │         └─────────────────────┘
-└──────────────┘
+Song Data (Rust)       PCM Renderer (Rust)        macroquad audio
+┌──────────────┐      ┌──────────────────┐      ┌──────────────────┐
+│ Note structs │─────▶│ render_to_wav()   │─────▶│ load_sound_from  │
+│ freq, dur,   │      │                  │      │ _bytes()         │
+│ vol, wave    │      │ For each sample: │      │                  │
+│              │      │  square wave     │      │ play_sound()     │
+│ MELODY[]     │      │  triangle wave   │      │ (looped)         │
+│ BASS[]       │      │  noise channel   │      │                  │
+│ DRUMS[]      │      │  → mix to i16    │      │ Handles WebAudio │
+└──────────────┘      │  → WAV bytes     │      │ internally       │
+                      └──────────────────┘      └──────────────────┘
 ```
 
 ### Song Definition Format
 
-Notes are defined as Rust data — arrays of `Note` structs:
+Notes are defined as Rust data — arrays of `Note` structs (unchanged from current `song.rs`):
 
 ```rust
 struct Note {
@@ -94,37 +95,44 @@ struct Note {
     volume: f32,    // 0.0 to 1.0
 }
 
-// Three channels, scheduled in parallel:
+// Three channels, rendered in parallel into one mixed buffer:
 const MELODY: &[Note] = &[...];  // square wave — main theme
 const BASS: &[Note] = &[...];    // triangle wave — bass line
 const DRUMS: &[Note] = &[...];   // noise — percussion hits
 ```
 
+### PCM Rendering
+
+A `render_to_wav()` function in `audio.rs` does the synthesis:
+
+1. Allocate a sample buffer (sample rate: 44100 Hz, 16-bit mono)
+2. For each channel, walk the note array and generate samples:
+   - **Melody** — square wave: `if (phase % period) < half_period { +amp } else { -amp }`
+   - **Bass** — triangle wave: sawtooth-based triangle formula
+   - **Drums** — white noise bursts: random values scaled by amplitude
+3. Mix all three channels by summing samples (with clipping to i16 range)
+4. Prepend a valid WAV header (44 bytes: RIFF, fmt chunk, data chunk)
+5. Return the complete WAV as `Vec<u8>`
+
 ### Music Specs
 
 - **Style:** 8-bit chiptune, heroic/adventurous feel
-- **Tempo:** ~120 BPM
+- **Tempo:** ~140 BPM
 - **Length:** 15-30 second loop
+- **Sample rate:** 44100 Hz, 16-bit mono
 - **Channels:**
-  - Melody — `OscillatorNode` with `"square"` waveform
-  - Bass — `OscillatorNode` with `"triangle"` waveform
-  - Percussion — Short burst noise via `OscillatorNode` or buffer noise
-- **Playback:** Starts on first user interaction (browser autoplay policy), loops seamlessly by re-scheduling notes when the loop completes
+  - Melody — square wave
+  - Bass — triangle wave
+  - Percussion — white noise bursts
+- **Playback:** `macroquad::audio::play_sound()` with `looped: true`. Starts on first user interaction to satisfy browser autoplay policy.
 
 ### Dependencies
 
-```toml
-[dependencies]
-wasm-bindgen = "0.2"
-web-sys = { version = "0.3", features = [
-    "AudioContext", "OscillatorNode", "OscillatorType",
-    "GainNode", "AudioDestinationNode", "AudioParam",
-] }
-```
+**None beyond macroquad.** No `wasm-bindgen`, no `web-sys`, no `js-sys`. The only dependency is `macroquad = "0.4"` which already provides `macroquad::audio`.
 
 ### Browser Autoplay Handling
 
-The `AudioContext` is created on first user keypress/click. This satisfies the browser's autoplay policy. Before interaction, the splash screen shows "~ Press any key to start ~".
+macroquad's audio plays through the browser's WebAudio internally. Audio starts on first user keypress/click. Before interaction, the splash screen shows "~ Press any key to start ~".
 
 ## Implementation Checklist
 
