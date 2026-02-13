@@ -102,6 +102,7 @@ This project follows **spec-driven development**. All work flows through natural
 ## Conventions
 
 - **Be concise but complete** — Code, comments, and documentation should be brief and to the point while covering everything necessary. No fluff, no gaps.
+- **No JavaScript** — This is a pure WASM project. All logic lives in Rust. The only JS allowed is the minimal macroquad loader (`mq_js_bundle.js`) which is a third-party dependency. Never write custom JavaScript.
 - Use macroquad's built-in game loop (`#[macroquad::main]` attribute)
 - Tile-based rendering — all game objects align to a grid
 - Real-time gameplay (not turn-based) with smooth movement
