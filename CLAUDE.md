@@ -109,3 +109,4 @@ This project follows **spec-driven development**. All work flows through natural
 - Real-time gameplay (not turn-based) with smooth movement
 - Procedural dungeon generation each run
 - Keep WASM binary size small — avoid heavy dependencies
+- **Build timestamp** — Every build embeds a compile-time timestamp (via `env!("BUILD_TIMESTAMP")` set in `build.rs`). Display it in small text at the bottom-right of every screen so we can verify the deployed version matches the latest code.
