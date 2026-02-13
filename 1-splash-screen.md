@@ -196,3 +196,4 @@ The splash screen is done when:
 4. 8-bit music plays (immediately or after first tap)
 5. "Tap to continue" text pulses on screen
 6. Works on iPad via touch
+7. Build timestamp visible at bottom-right corner
