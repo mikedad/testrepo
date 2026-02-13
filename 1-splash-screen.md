@@ -144,9 +144,11 @@ macroquad = "0.4"
 
 Audio playback strategy (handles browser autoplay policy):
 
-1. On startup: generate WAV, load via `load_sound_from_bytes`. Do NOT attempt playback yet (browser will block it and we can't detect the failure).
-2. On first touch/click/tap: call `play_sound`. This is the real play attempt — after user interaction, the browser allows audio.
-3. If `load_sound_from_bytes` fails, capture the error for display.
+1. On startup: generate WAV bytes in memory (`render_to_wav()`). Do NOT call `load_sound_from_bytes` yet — this avoids creating macroquad's internal AudioContext before user interaction.
+2. On first touch/click/tap: call `load_sound_from_bytes` (creates AudioContext after user gesture) then immediately call `play_sound`. Both happen in the same frame, after interaction.
+3. If either step fails, capture the error for display.
+
+**Why delay loading:** macroquad's `quad-snd` creates a browser AudioContext during `load_sound_from_bytes`. If this happens before any user interaction, the AudioContext starts in a "suspended" state and may never resume. By deferring both load and play to after the first tap, the AudioContext is created in an "allowed" state.
 
 The splash screen uses touch-friendly input — "Tap to continue" instead of "Press any key". All interaction works via touch (mouse clicks also work on desktop).
 
