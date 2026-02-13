@@ -49,7 +49,7 @@ Create the project skeleton and a polished splash screen — the first thing pla
 
 All art will be rendered using macroquad drawing primitives (rectangles, lines) to create a chunky pixel-art look. No external image assets needed for v1.
 
-- **Warrior** — Blocky humanoid figure, sword in hand, simple 2-3 frame idle animation
+- **Warrior** — Blocky humanoid figure, sword in hand, simple 2-3 frame idle animation. **On tap/click: sword swing animation** (sword rotates forward and back over ~0.5s). This serves as visual confirmation that touch input is being detected.
 - **Monster** — Horned/fanged creature, glowing red eyes, idle sway animation
 - **Treasure** — Open chest with gold coins, shimmer sparkle effect
 
