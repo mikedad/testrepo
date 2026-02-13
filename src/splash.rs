@@ -53,6 +53,7 @@ impl SplashScreen {
         self.draw_monster(sw * 0.5, sh * 0.55, px);
         self.draw_treasure(sw * 0.8, sh * 0.55, px);
         self.draw_prompt(sw, sh);
+        self.draw_build_timestamp(sw, sh);
     }
 
     fn draw_title(&self, sw: f32, sh: f32, px: f32) {
