@@ -32,10 +32,11 @@ impl SplashScreen {
     pub fn update(&mut self) {
         self.time += get_frame_time();
 
-        if is_key_pressed(KeyCode::Escape) {
-            return;
-        }
-        if get_last_key_pressed().is_some() || is_mouse_button_pressed(MouseButton::Left) {
+        // Touch, click, or key — any interaction counts (iPad + desktop)
+        if is_mouse_button_pressed(MouseButton::Left)
+            || !touches().is_empty()
+            || get_last_key_pressed().is_some()
+        {
             self.user_interacted = true;
         }
     }
