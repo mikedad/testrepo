@@ -63,31 +63,27 @@ Keep it retro. Suggested base palette (adjustable):
 - Treasure: gold (`#ffd700`), brown chest (`#8b4513`)
 - Prompt text: white with alpha fade
 
-## Audio: 8-Bit Intro Song (Real-Time Synthesis via `cpal`)
+## Audio: 8-Bit Intro Song (In-Memory WAV + macroquad audio)
 
 ### Approach
 
-No audio files. No JavaScript. No pre-rendered WAV buffers. The intro song is defined as note data in Rust and **synthesized in real time** using the `cpal` crate. `cpal` provides a callback-based audio stream — the browser's WebAudio system asks for samples and our synth generates them on the fly. This is true real-time audio synthesis, pure Rust.
-
-### Why `cpal` instead of macroquad audio
-
-macroquad's audio (`macroquad::audio`) is designed for loading and playing audio files. It doesn't expose a real-time sample callback. `cpal` is the standard Rust crate for low-level audio I/O and has a WASM/WebAudio backend. It gives us a callback where we fill audio buffers sample-by-sample — exactly what a synthesizer needs.
+No audio files on disk. No JavaScript. No `wasm-bindgen`, `web-sys`, or `cpal`. The intro song is defined as note data in Rust and **synthesized into a WAV byte buffer in memory** at startup using pure math. The WAV is then loaded and played through **macroquad's built-in audio system** (`load_sound_from_bytes` / `play_sound`). macroquad's `quad-snd` backend already handles WebAudio internally via `mq_js_bundle.js` — no additional JS or WASM bindings needed.
 
 ### Architecture
 
 ```
-Song Data (Rust)       Real-Time Synth (Rust)     cpal (WASM backend)
+Song Data (Rust)       WAV Renderer (Rust)        macroquad audio
 ┌──────────────┐      ┌──────────────────┐      ┌──────────────────┐
-│ Note structs │─────▶│ Audio callback:   │─────▶│ WebAudio via     │
-│ freq, dur,   │      │                  │      │ cpal's WASM      │
-│ vol, wave    │      │ "Give me next N  │      │ backend           │
-│              │      │  samples"        │      │                  │
-│ MELODY[]     │      │                  │      │ AudioWorklet /   │
-│ BASS[]       │      │ Walk note arrays │      │ ScriptProcessor  │
-│ DRUMS[]      │      │ Generate square, │      │ → speakers       │
-└──────────────┘      │ triangle, noise  │      └──────────────────┘
-                      │ Mix & output     │
-                      └──────────────────┘
+│ Note structs │─────▶│ render_to_wav()   │─────▶│ load_sound_from  │
+│ freq, dur,   │      │                  │      │ _bytes()         │
+│ vol, wave    │      │ For each sample: │      │                  │
+│              │      │  square wave     │      │ play_sound()     │
+│ MELODY[]     │      │  triangle wave   │      │ (looped: true)   │
+│ BASS[]       │      │  noise channel   │      │                  │
+│ DRUMS[]      │      │  → mix to i16    │      │ quad-snd handles │
+└──────────────┘      │  → WAV header    │      │ WebAudio via     │
+                      │  → Vec<u8>       │      │ mq_js_bundle.js  │
+                      └──────────────────┘      └──────────────────┘
 ```
 
 ### Song Definition Format
@@ -101,51 +97,59 @@ struct Note {
     volume: f32,    // 0.0 to 1.0
 }
 
-// Three channels, synthesized in parallel in the audio callback:
+// Three channels, mixed into one WAV buffer:
 const MELODY: &[Note] = &[...];  // square wave — main theme
 const BASS: &[Note] = &[...];    // triangle wave — bass line
 const DRUMS: &[Note] = &[...];   // noise — percussion hits
 ```
 
-### Real-Time Synthesis
+### WAV Rendering
 
-The audio callback in `audio.rs`:
+A `render_to_wav()` function in `audio.rs`:
 
-1. `cpal` opens a default output stream with a sample callback
-2. Each call asks for N samples to fill a buffer
-3. For each sample, the synth tracks playback position across all three channels:
+1. Calculate total duration from the melody channel
+2. Allocate a float sample buffer (44100 Hz, mono)
+3. For each channel, walk the note array and generate samples:
    - **Melody** — square wave: `if phase < 0.5 { +amp } else { -amp }`
    - **Bass** — triangle wave: linear ramp up/down per period
    - **Drums** — white noise bursts via LFSR
 4. Apply per-note envelope (10ms attack, 20ms release) to avoid clicks
-5. Mix channels by summing, clamp to output range
-6. When all notes in a channel are exhausted, loop back to the start
+5. Mix all three channels by summing into the buffer
+6. Convert to i16, clamp to range
+7. Prepend a valid 44-byte WAV header (RIFF/fmt/data chunks)
+8. Return `Vec<u8>` — a complete, valid WAV file in memory
 
 ### Music Specs
 
 - **Style:** 8-bit chiptune, heroic/adventurous feel
 - **Tempo:** ~140 BPM
 - **Length:** 15-30 second loop
-- **Sample rate:** determined by `cpal` default device (typically 44100 or 48000 Hz)
+- **Sample rate:** 44100 Hz, 16-bit mono
 - **Channels:**
   - Melody — square wave
   - Bass — triangle wave
   - Percussion — white noise bursts
-- **Playback:** Stream starts automatically when the splash screen loads. Loops seamlessly. Note: some browsers may block autoplay — if so, audio begins on first touch/click.
+- **Playback:** `play_sound()` with `looped: true`. Attempts to play immediately on load. Retries on first touch/click if browser blocked autoplay.
 
 ### Dependencies
 
 ```toml
 [dependencies]
 macroquad = "0.4"
-cpal = "0.15"
 ```
 
-No `wasm-bindgen`, no `web-sys`, no `js-sys`. `cpal` handles the WASM/WebAudio bridge internally.
+**macroquad only.** No `cpal`, no `wasm-bindgen`, no `web-sys`, no `js-sys`. Zero additional dependencies.
 
 ### Autoplay & iPad Support
 
-Audio starts automatically on load. If the browser blocks autoplay, the audio will begin on the first touch/click. The splash screen uses touch-friendly input — "Tap to continue" instead of "Press any key". All interaction works via touch (mouse clicks also work on desktop).
+Audio playback strategy (handles browser autoplay policy):
+
+1. On startup: generate WAV, load via `load_sound_from_bytes`, call `play_sound` immediately
+2. If browser blocks autoplay (silent failure), the sound is already loaded and ready
+3. On first touch/click/tap: call `play_sound` again as a retry
+4. macroquad's internal WebAudio context gets resumed by user interaction with the canvas
+
+The splash screen uses touch-friendly input — "Tap to continue" instead of "Press any key". All interaction works via touch (mouse clicks also work on desktop).
 
 ## Implementation Checklist
 
