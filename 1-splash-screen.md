@@ -62,24 +62,69 @@ Keep it retro. Suggested base palette (adjustable):
 - Treasure: gold (`#ffd700`), brown chest (`#8b4513`)
 - Prompt text: white with alpha fade
 
-## Audio: 8-Bit Intro Song
+## Audio: 8-Bit Intro Song (WebAudio Synthesizer)
 
 ### Approach
 
-Generate the intro music programmatically at build time or embed a small `.ogg` file. The song should feel like an NES/Game Boy title screen.
+No audio files. The intro song is defined as note data in Rust and synthesized at runtime using the browser's **WebAudio API** via `web-sys` and `wasm-bindgen`. The browser's built-in `OscillatorNode` generates square, triangle, and noise waveforms — authentic 8-bit sound with zero file overhead.
+
+### Architecture
+
+```
+Song Data (Rust)          WebAudio API (Browser)
+┌──────────────┐         ┌─────────────────────┐
+│ Note structs │───JS───▶│ AudioContext         │
+│ freq, dur,   │  FFI    │ ├─ OscillatorNode    │
+│ vol, wave    │         │ │  (square/triangle)  │
+│              │         │ ├─ GainNode (volume)  │
+│ MELODY[]     │         │ └─ destination        │
+│ BASS[]       │         │    (speakers)         │
+│ DRUMS[]      │         └─────────────────────┘
+└──────────────┘
+```
+
+### Song Definition Format
+
+Notes are defined as Rust data — arrays of `Note` structs:
+
+```rust
+struct Note {
+    freq: f32,      // frequency in Hz (e.g. 440.0 = A4), 0.0 = rest
+    duration: f32,  // in seconds
+    volume: f32,    // 0.0 to 1.0
+}
+
+// Three channels, scheduled in parallel:
+const MELODY: &[Note] = &[...];  // square wave — main theme
+const BASS: &[Note] = &[...];    // triangle wave — bass line
+const DRUMS: &[Note] = &[...];   // noise — percussion hits
+```
 
 ### Music Specs
 
 - **Style:** 8-bit chiptune, heroic/adventurous feel
 - **Tempo:** ~120 BPM
 - **Length:** 15-30 second loop
-- **Channels:** Melody (square wave), bass (triangle wave), percussion (noise)
-- **Format:** `.ogg` (small file size, good browser support)
-- **Playback:** Starts automatically, loops seamlessly
+- **Channels:**
+  - Melody — `OscillatorNode` with `"square"` waveform
+  - Bass — `OscillatorNode` with `"triangle"` waveform
+  - Percussion — Short burst noise via `OscillatorNode` or buffer noise
+- **Playback:** Starts on first user interaction (browser autoplay policy), loops seamlessly by re-scheduling notes when the loop completes
 
-### Audio Note
+### Dependencies
 
-Browsers block autoplay audio until a user interaction. The splash screen must handle this — either start audio on the first keypress/click, or show a "Click to start" prompt first.
+```toml
+[dependencies]
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = [
+    "AudioContext", "OscillatorNode", "OscillatorType",
+    "GainNode", "AudioDestinationNode", "AudioParam",
+] }
+```
+
+### Browser Autoplay Handling
+
+The `AudioContext` is created on first user keypress/click. This satisfies the browser's autoplay policy. Before interaction, the splash screen shows "~ Press any key to start ~".
 
 ## Implementation Checklist
 
