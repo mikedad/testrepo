@@ -4,41 +4,52 @@ use macroquad::audio::{load_sound_from_bytes, play_sound, PlaySoundParams, Sound
 const SAMPLE_RATE: u32 = 44100;
 
 pub struct AudioManager {
+    wav_bytes: Vec<u8>,
     sound: Option<Sound>,
     status: String,
+    started: bool,
 }
 
 impl AudioManager {
-    /// Generate WAV from note data and load it into macroquad's audio system.
-    pub async fn new() -> Self {
-        let wav = render_to_wav();
-        match load_sound_from_bytes(&wav).await {
-            Ok(s) => Self {
-                sound: Some(s),
-                status: "audio: loaded, waiting for tap".to_string(),
-            },
-            Err(e) => Self {
-                sound: None,
-                status: format!("audio: load error: {}", e),
-            },
+    /// Generate WAV bytes on startup. Does NOT load into audio system yet.
+    pub fn new() -> Self {
+        let wav_bytes = render_to_wav();
+        let len = wav_bytes.len();
+        Self {
+            wav_bytes,
+            sound: None,
+            status: format!("audio: wav ready ({} bytes), waiting for tap", len),
+            started: false,
         }
     }
 
-    /// Play the sound. Call after user interaction to satisfy autoplay policy.
-    pub fn play(&mut self) {
-        match &self.sound {
-            Some(sound) => {
-                play_sound(sound, PlaySoundParams { looped: true, volume: 0.6 });
+    /// Load and play. Call after first user interaction.
+    /// Must be async because load_sound_from_bytes is async.
+    pub async fn load_and_play(&mut self) {
+        if self.started {
+            return;
+        }
+        self.started = true;
+        self.status = "audio: loading...".to_string();
+
+        match load_sound_from_bytes(&self.wav_bytes).await {
+            Ok(sound) => {
+                play_sound(&sound, PlaySoundParams { looped: true, volume: 0.6 });
+                self.sound = Some(sound);
                 self.status = "audio: playing".to_string();
             }
-            None => {
-                self.status = "audio: no sound loaded".to_string();
+            Err(e) => {
+                self.status = format!("audio: load error: {}", e);
             }
         }
     }
 
     pub fn status(&self) -> &str {
         &self.status
+    }
+
+    pub fn started(&self) -> bool {
+        self.started
     }
 }
 
@@ -182,7 +193,7 @@ mod tests {
     fn wav_size_is_correct() {
         let samples = vec![0i16; 100];
         let wav = encode_wav(&samples, 44100);
-        assert_eq!(wav.len(), 244); // 44 header + 200 data
+        assert_eq!(wav.len(), 244);
     }
 
     #[test]
@@ -199,7 +210,7 @@ mod tests {
         let has_nonzero = wav[44..].chunks(2).any(|chunk| {
             i16::from_le_bytes([chunk[0], chunk[1]]) != 0
         });
-        assert!(has_nonzero, "rendered audio should contain non-silent samples");
+        assert!(has_nonzero);
     }
 
     #[test]
