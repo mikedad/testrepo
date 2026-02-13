@@ -1,10 +1,10 @@
-# Dungeon of Rust
+# Dungeon Creator
 
 A real-time roguelike dungeon crawler built in Rust and WebAssembly. Play it in your browser — no install required.
 
 ## About
 
-Dungeon of Rust is a procedurally generated dungeon crawler where you explore randomly created levels, fight enemies, collect loot, and descend deeper into increasingly dangerous floors. Each run is unique. Death is permanent.
+Dungeon Creator is a procedurally generated dungeon crawler where you explore randomly created levels, fight enemies, collect loot, and descend deeper into increasingly dangerous floors. Each run is unique. Death is permanent.
 
 The game is built entirely in Rust, compiled to WebAssembly, and hosted for free on GitHub Pages.
 
