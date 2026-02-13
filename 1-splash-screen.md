@@ -34,7 +34,7 @@ Create the project skeleton and a polished splash screen — the first thing pla
 │   - Right: treasure chest with gold      │
 │     shimmer effect                       │
 │                                          │
-│        ~ Press any key to start ~        │
+│          ~ Tap to continue ~             │
 │          (pulsing/fading text)           │
 │                                          │
 └──────────────────────────────────────────┘
