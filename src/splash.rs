@@ -304,7 +304,16 @@ impl SplashScreen {
         let font_size = (sw / 320.0 * 5.0).max(12.0);
         let color = Color::new(1.0, 1.0, 1.0, 0.5);
         let dims = measure_text(ts, None, font_size as u16, 1.0);
-        // Centered, just above the "Tap to continue" text
         draw_text(ts, (sw - dims.width) / 2.0, sh * 0.83, font_size, color);
+    }
+
+    /// Draw audio status text above the build timestamp. Called from main.
+    pub fn draw_status(&self, status: &str) {
+        let sw = screen_width();
+        let sh = screen_height();
+        let font_size = (sw / 320.0 * 5.0).max(12.0);
+        let color = Color::new(1.0, 0.8, 0.2, 0.7);
+        let dims = measure_text(status, None, font_size as u16, 1.0);
+        draw_text(status, (sw - dims.width) / 2.0, sh * 0.78, font_size, color);
     }
 }
