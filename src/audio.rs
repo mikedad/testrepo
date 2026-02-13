@@ -1,9 +1,8 @@
-use macroquad::audio::{load_sound_from_bytes, play_sound, PlaySoundParams, Sound};
+use macroquad::audio::{load_sound, play_sound, PlaySoundParams, Sound};
 
 const SAMPLE_RATE: u32 = 44100;
 
 pub struct AudioManager {
-    wav_bytes: Vec<u8>,
     sound: Option<Sound>,
     status: String,
     started: bool,
@@ -11,36 +10,31 @@ pub struct AudioManager {
 }
 
 impl AudioManager {
-    /// Generate WAV bytes on startup. Does NOT load into audio system yet.
     pub fn new() -> Self {
-        let wav_bytes = render_test_tone();
-        let len = wav_bytes.len();
         Self {
-            wav_bytes,
             sound: None,
-            status: format!("audio: TEST TONE wav ready ({} bytes), waiting for tap", len),
+            status: "audio: FILE MODE, waiting for tap".to_string(),
             started: false,
             resumed: false,
         }
     }
 
-    /// Load and play. Call after first user interaction.
-    /// Must be async because load_sound_from_bytes is async.
+    /// Load from static file and play. Call after first user interaction.
     pub async fn load_and_play(&mut self) {
         if self.started {
             return;
         }
         self.started = true;
-        self.status = "audio: loading...".to_string();
+        self.status = "audio: loading test_tone.wav...".to_string();
 
-        match load_sound_from_bytes(&self.wav_bytes).await {
+        match load_sound("test_tone.wav").await {
             Ok(sound) => {
                 play_sound(&sound, PlaySoundParams { looped: true, volume: 1.0 });
                 self.sound = Some(sound);
-                self.status = "audio: playing (tap again to resume)".to_string();
+                self.status = "audio: FILE playing (tap again to resume)".to_string();
             }
             Err(e) => {
-                self.status = format!("audio: load error: {}", e);
+                self.status = format!("audio: FILE load error: {}", e);
             }
         }
     }
@@ -49,12 +43,9 @@ impl AudioManager {
     pub fn on_tap_after_start(&mut self) {
         if self.started && !self.resumed {
             if let Some(ref sound) = self.sound {
-                // Re-issue play_sound on second tap — this happens in a direct
-                // user gesture context, so the AudioContext resume listeners
-                // in mq_js_bundle.js should fire.
                 play_sound(sound, PlaySoundParams { looped: true, volume: 1.0 });
                 self.resumed = true;
-                self.status = "audio: playing (resumed)".to_string();
+                self.status = "audio: FILE playing (resumed)".to_string();
             }
         }
     }
