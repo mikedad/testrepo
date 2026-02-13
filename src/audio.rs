@@ -1,58 +1,123 @@
 use crate::song::{self, Note};
-use macroquad::audio::{load_sound_from_bytes, play_sound, PlaySoundParams, Sound};
-
-const SAMPLE_RATE: u32 = 44100;
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::Stream;
 
 pub struct AudioManager {
-    sound: Option<Sound>,
-    playing: bool,
+    _stream: Option<Stream>,
 }
 
 impl AudioManager {
-    pub async fn new() -> Self {
-        let wav = render_to_wav();
-        let sound = match load_sound_from_bytes(&wav).await {
-            Ok(s) => Some(s),
-            Err(e) => {
-                eprintln!("Failed to load generated audio: {}", e);
+    /// Create and immediately start the audio stream.
+    pub fn start() -> Self {
+        let stream = match build_stream() {
+            Some(s) => {
+                let _ = s.play();
+                Some(s)
+            }
+            None => {
+                eprintln!("Failed to start audio stream");
                 None
             }
         };
-        Self { sound, playing: false }
-    }
-
-    /// Start playing on first user interaction (browser autoplay policy).
-    pub fn play(&mut self) {
-        if self.playing {
-            return;
-        }
-        if let Some(ref sound) = self.sound {
-            play_sound(sound, PlaySoundParams { looped: true, volume: 0.6 });
-            self.playing = true;
-        }
+        Self { _stream: stream }
     }
 }
 
-/// Render the intro song from note data into a complete WAV byte buffer.
-fn render_to_wav() -> Vec<u8> {
-    let duration = song::loop_duration();
-    let num_samples = (duration * SAMPLE_RATE as f32) as usize;
-    let mut buffer = vec![0.0f32; num_samples];
+fn build_stream() -> Option<Stream> {
+    let host = cpal::default_host();
+    let device = host.default_output_device()?;
+    let config = device.default_output_config().ok()?;
+    let sample_rate = config.sample_rate().0 as f32;
+    let channels = config.channels() as usize;
 
-    // Render each channel and mix into buffer
-    render_channel(&mut buffer, song::MELODY, Waveform::Square);
-    render_channel(&mut buffer, song::BASS, Waveform::Triangle);
-    render_channel(&mut buffer, song::DRUMS, Waveform::Noise);
+    let mut synth = SynthState::new(sample_rate);
 
-    // Convert f32 mix to i16 samples
-    let mut samples = Vec::with_capacity(num_samples);
-    for &s in &buffer {
-        let clamped = s.clamp(-1.0, 1.0);
-        samples.push((clamped * 32767.0) as i16);
+    let stream = device
+        .build_output_stream(
+            &config.into(),
+            move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
+                for frame in data.chunks_mut(channels) {
+                    let sample = synth.next_sample();
+                    for s in frame.iter_mut() {
+                        *s = sample;
+                    }
+                }
+            },
+            |err| eprintln!("audio stream error: {}", err),
+            None,
+        )
+        .ok()?;
+
+    Some(stream)
+}
+
+/// Tracks playback position for one channel.
+struct ChannelState {
+    note_idx: usize,
+    sample_in_note: usize,
+    noise_state: u32,
+}
+
+impl ChannelState {
+    fn new() -> Self {
+        Self {
+            note_idx: 0,
+            sample_in_note: 0,
+            noise_state: 0xDEAD_BEEF,
+        }
     }
 
-    // Build WAV file
-    encode_wav(&samples, SAMPLE_RATE)
+    /// Generate one sample for this channel and advance position.
+    fn next_sample(&mut self, notes: &[Note], wave: Waveform, sample_rate: f32) -> f32 {
+        if notes.is_empty() {
+            return 0.0;
+        }
+
+        let note = &notes[self.note_idx];
+        let note_samples = (note.duration * sample_rate) as usize;
+
+        let sample = if note.freq > 0.0 && note.volume > 0.0 {
+            let env = envelope(self.sample_in_note, note_samples, sample_rate);
+            let period = sample_rate / note.freq;
+            let phase = (self.sample_in_note as f32 % period) / period;
+
+            let raw = match wave {
+                Waveform::Square => {
+                    if phase < 0.5 { note.volume } else { -note.volume }
+                }
+                Waveform::Triangle => {
+                    let tri = if phase < 0.5 {
+                        4.0 * phase - 1.0
+                    } else {
+                        3.0 - 4.0 * phase
+                    };
+                    tri * note.volume
+                }
+                Waveform::Noise => {
+                    self.noise_state ^= self.noise_state << 13;
+                    self.noise_state ^= self.noise_state >> 17;
+                    self.noise_state ^= self.noise_state << 5;
+                    let noise = (self.noise_state as f32 / u32::MAX as f32) * 2.0 - 1.0;
+                    noise * note.volume
+                }
+            };
+            raw * env
+        } else {
+            0.0
+        };
+
+        // Advance position
+        self.sample_in_note += 1;
+        if self.sample_in_note >= note_samples {
+            self.sample_in_note = 0;
+            self.note_idx += 1;
+            if self.note_idx >= notes.len() {
+                self.note_idx = 0; // loop
+            }
+        }
+
+        sample
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -62,102 +127,44 @@ enum Waveform {
     Noise,
 }
 
-fn render_channel(buffer: &mut [f32], notes: &[Note], wave: Waveform) {
-    let mut sample_pos: usize = 0;
-    let mut noise_state: u32 = 0xDEAD_BEEF; // LFSR seed for noise
+struct SynthState {
+    melody: ChannelState,
+    bass: ChannelState,
+    drums: ChannelState,
+    sample_rate: f32,
+}
 
-    for note in notes {
-        let note_samples = (note.duration * SAMPLE_RATE as f32) as usize;
-
-        if note.freq > 0.0 && note.volume > 0.0 {
-            let period = SAMPLE_RATE as f32 / note.freq;
-
-            for i in 0..note_samples {
-                let idx = sample_pos + i;
-                if idx >= buffer.len() {
-                    break;
-                }
-
-                // Envelope: 10ms attack, 20ms release to avoid clicks
-                let env = envelope(i, note_samples);
-
-                let sample = match wave {
-                    Waveform::Square => {
-                        let phase = (i as f32 % period) / period;
-                        if phase < 0.5 { note.volume } else { -note.volume }
-                    }
-                    Waveform::Triangle => {
-                        let phase = (i as f32 % period) / period;
-                        let tri = if phase < 0.5 {
-                            4.0 * phase - 1.0
-                        } else {
-                            3.0 - 4.0 * phase
-                        };
-                        tri * note.volume
-                    }
-                    Waveform::Noise => {
-                        // Linear feedback shift register for pseudo-random noise
-                        noise_state ^= noise_state << 13;
-                        noise_state ^= noise_state >> 17;
-                        noise_state ^= noise_state << 5;
-                        let noise = (noise_state as f32 / u32::MAX as f32) * 2.0 - 1.0;
-                        noise * note.volume
-                    }
-                };
-
-                buffer[idx] += sample * env;
-            }
+impl SynthState {
+    fn new(sample_rate: f32) -> Self {
+        Self {
+            melody: ChannelState::new(),
+            bass: ChannelState::new(),
+            drums: ChannelState::new(),
+            sample_rate,
         }
+    }
 
-        sample_pos += note_samples;
+    fn next_sample(&mut self) -> f32 {
+        let m = self.melody.next_sample(song::MELODY, Waveform::Square, self.sample_rate);
+        let b = self.bass.next_sample(song::BASS, Waveform::Triangle, self.sample_rate);
+        let d = self.drums.next_sample(song::DRUMS, Waveform::Noise, self.sample_rate);
+        (m + b + d).clamp(-1.0, 1.0)
     }
 }
 
-/// Simple attack/release envelope to avoid clicks.
-fn envelope(sample: usize, total: usize) -> f32 {
-    let attack_samples = (0.01 * SAMPLE_RATE as f32) as usize; // 10ms
-    let release_samples = (0.02 * SAMPLE_RATE as f32) as usize; // 20ms
+/// Per-note envelope: 10ms attack, 20ms release.
+fn envelope(sample: usize, total: usize, sample_rate: f32) -> f32 {
+    let attack = (0.01 * sample_rate) as usize;
+    let release = (0.02 * sample_rate) as usize;
 
-    if sample < attack_samples {
-        sample as f32 / attack_samples as f32
-    } else if sample > total.saturating_sub(release_samples) {
+    if sample < attack {
+        sample as f32 / attack as f32
+    } else if sample > total.saturating_sub(release) {
         let remaining = total - sample;
-        remaining as f32 / release_samples as f32
+        remaining as f32 / release as f32
     } else {
         1.0
     }
-}
-
-/// Encode i16 samples as a WAV file (44100 Hz, 16-bit, mono).
-fn encode_wav(samples: &[i16], sample_rate: u32) -> Vec<u8> {
-    let data_size = (samples.len() * 2) as u32;
-    let file_size = 36 + data_size;
-
-    let mut wav = Vec::with_capacity(44 + data_size as usize);
-
-    // RIFF header
-    wav.extend_from_slice(b"RIFF");
-    wav.extend_from_slice(&file_size.to_le_bytes());
-    wav.extend_from_slice(b"WAVE");
-
-    // fmt chunk
-    wav.extend_from_slice(b"fmt ");
-    wav.extend_from_slice(&16u32.to_le_bytes()); // chunk size
-    wav.extend_from_slice(&1u16.to_le_bytes()); // PCM format
-    wav.extend_from_slice(&1u16.to_le_bytes()); // mono
-    wav.extend_from_slice(&sample_rate.to_le_bytes());
-    wav.extend_from_slice(&(sample_rate * 2).to_le_bytes()); // byte rate
-    wav.extend_from_slice(&2u16.to_le_bytes()); // block align
-    wav.extend_from_slice(&16u16.to_le_bytes()); // bits per sample
-
-    // data chunk
-    wav.extend_from_slice(b"data");
-    wav.extend_from_slice(&data_size.to_le_bytes());
-    for &sample in samples {
-        wav.extend_from_slice(&sample.to_le_bytes());
-    }
-
-    wav
 }
 
 #[cfg(test)]
@@ -165,61 +172,46 @@ mod tests {
     use super::*;
 
     #[test]
-    fn wav_header_is_valid() {
-        let samples = vec![0i16; 100];
-        let wav = encode_wav(&samples, 44100);
-
-        assert_eq!(&wav[0..4], b"RIFF");
-        assert_eq!(&wav[8..12], b"WAVE");
-        assert_eq!(&wav[12..16], b"fmt ");
-        assert_eq!(&wav[36..40], b"data");
-    }
-
-    #[test]
-    fn wav_size_is_correct() {
-        let samples = vec![0i16; 100];
-        let wav = encode_wav(&samples, 44100);
-
-        // 44 byte header + 200 bytes data
-        assert_eq!(wav.len(), 244);
-    }
-
-    #[test]
-    fn render_to_wav_produces_valid_wav() {
-        let wav = render_to_wav();
-
-        assert_eq!(&wav[0..4], b"RIFF");
-        assert_eq!(&wav[8..12], b"WAVE");
-        assert!(wav.len() > 44, "WAV should have data beyond header");
-    }
-
-    #[test]
-    fn render_to_wav_has_audible_content() {
-        let wav = render_to_wav();
-
-        // Check that not all samples are zero (skip 44-byte header)
-        let has_nonzero = wav[44..].chunks(2).any(|chunk| {
-            let sample = i16::from_le_bytes([chunk[0], chunk[1]]);
-            sample != 0
-        });
-        assert!(has_nonzero, "rendered audio should contain non-silent samples");
-    }
-
-    #[test]
     fn envelope_attack_starts_at_zero() {
-        assert_eq!(envelope(0, 10000), 0.0);
+        assert_eq!(envelope(0, 10000, 44100.0), 0.0);
     }
 
     #[test]
     fn envelope_sustain_is_one() {
-        let mid = 5000;
-        assert_eq!(envelope(mid, 10000), 1.0);
+        assert_eq!(envelope(5000, 10000, 44100.0), 1.0);
     }
 
     #[test]
     fn envelope_release_ends_near_zero() {
-        let total = 10000;
-        let near_end = total - 1;
-        assert!(envelope(near_end, total) < 0.01);
+        assert!(envelope(9999, 10000, 44100.0) < 0.01);
+    }
+
+    #[test]
+    fn synth_produces_nonzero_samples() {
+        let mut synth = SynthState::new(44100.0);
+        let has_nonzero = (0..44100).any(|_| synth.next_sample() != 0.0);
+        assert!(has_nonzero, "synth should produce audible samples");
+    }
+
+    #[test]
+    fn synth_output_stays_in_range() {
+        let mut synth = SynthState::new(44100.0);
+        for _ in 0..44100 {
+            let s = synth.next_sample();
+            assert!(s >= -1.0 && s <= 1.0, "sample out of range: {}", s);
+        }
+    }
+
+    #[test]
+    fn channel_loops_back_to_start() {
+        let mut ch = ChannelState::new();
+        let notes = &[Note { freq: 440.0, duration: 0.01, volume: 0.5 }];
+        let samples_per_note = (0.01 * 44100.0) as usize;
+        // Play through the single note twice
+        for _ in 0..(samples_per_note * 2 + 10) {
+            ch.next_sample(notes, Waveform::Square, 44100.0);
+        }
+        // Should have looped — note_idx back to 0
+        assert_eq!(ch.note_idx, 0);
     }
 }
