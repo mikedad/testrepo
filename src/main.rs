@@ -1,4 +1,5 @@
 mod audio;
+mod song;
 mod splash;
 
 use audio::AudioManager;
@@ -18,7 +19,7 @@ fn window_conf() -> Conf {
 #[macroquad::main(window_conf)]
 async fn main() {
     let mut splash = SplashScreen::new();
-    let mut audio_mgr = AudioManager::new().await;
+    let mut audio_mgr = AudioManager::new();
     let mut audio_started = false;
 
     loop {
@@ -26,8 +27,12 @@ async fn main() {
 
         // Start audio after first user interaction (browser autoplay policy)
         if splash.user_interacted() && !audio_started {
-            audio_mgr.play_intro();
+            audio_mgr.start();
             audio_started = true;
+        }
+
+        if audio_started {
+            audio_mgr.update();
         }
 
         splash.draw();
