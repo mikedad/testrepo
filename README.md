@@ -81,7 +81,7 @@ rustup target add wasm32-unknown-unknown
 cargo build --release --target wasm32-unknown-unknown
 
 # The WASM binary will be at:
-# target/wasm32-unknown-unknown/release/dungeon_of_rust.wasm
+# target/wasm32-unknown-unknown/release/dungeon_creator.wasm
 ```
 
 ## Playing
