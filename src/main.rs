@@ -19,16 +19,14 @@ fn window_conf() -> Conf {
 #[macroquad::main(window_conf)]
 async fn main() {
     let mut splash = SplashScreen::new();
-    let mut audio_mgr = AudioManager::new().await;
-    let mut audio_started = false;
+    let mut audio_mgr = AudioManager::new();
 
     loop {
         splash.update();
 
-        // Play audio on first user interaction (satisfies browser autoplay policy)
-        if splash.user_interacted() && !audio_started {
-            audio_mgr.play();
-            audio_started = true;
+        // Load and play audio on first user interaction
+        if splash.user_interacted() && !audio_mgr.started() {
+            audio_mgr.load_and_play().await;
         }
 
         splash.draw();
