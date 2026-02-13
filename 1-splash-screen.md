@@ -9,8 +9,9 @@ Create the project skeleton and a polished splash screen — the first thing pla
 - Rust + macroquad project compiling to WASM
 - A splash screen that runs in the browser via GitHub Pages
 - Pixel art scene with a warrior, monster, and treasure
-- An original 8-bit intro song playing on loop
-- "Press any key to continue" prompt (leads nowhere yet — future versions add menus)
+- An original 8-bit intro song that plays automatically on load
+- "Tap to continue" prompt (leads nowhere yet — future versions add menus)
+- Works on iPad — touch input, no keyboard required
 
 ## Splash Screen Design
 
