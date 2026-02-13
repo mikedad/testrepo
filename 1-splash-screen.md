@@ -171,6 +171,7 @@ The splash screen uses touch-friendly input — "Tap to continue" instead of "Pr
 - [ ] Load WAV via `macroquad::audio::load_sound_from_bytes()`
 - [ ] Play immediately on load + retry on first touch/click (autoplay handling)
 - [ ] Use touch input — "Tap to continue" (iPad compatible)
+- [ ] Warrior sword swing animation on tap/click (visual touch confirmation)
 - [ ] Create `web/index.html` wrapper
 - [ ] Test in browser via WASM
 - [ ] Deploy to GitHub Pages
