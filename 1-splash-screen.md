@@ -175,6 +175,10 @@ Additionally, the `AudioManager` tracks whether a second tap occurred after load
 
 This helps determine if the AudioContext suspension is the root cause.
 
+### Audio Debugging: Static File Loading
+
+If `load_sound_from_bytes` doesn't produce audio on Safari even with a simple test tone, try loading audio as a static file instead. Generate `web/test_tone.wav` at build time (via a Rust helper), and use `macroquad::audio::load_sound("test_tone.wav")` instead of `load_sound_from_bytes`. This uses macroquad's XHR-based file loading path, which is more commonly tested. If this works but `load_sound_from_bytes` doesn't, the issue is specific to the in-memory loading path.
+
 ## Implementation Checklist
 
 - [ ] Initialize Cargo project with macroquad dependency
