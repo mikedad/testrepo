@@ -24,9 +24,14 @@ async fn main() {
     loop {
         splash.update();
 
-        // Load and play audio on first user interaction
-        if splash.user_interacted() && !audio_mgr.started() {
-            audio_mgr.load_and_play().await;
+        if splash.user_interacted() {
+            if !audio_mgr.started() {
+                // First tap: load and play audio
+                audio_mgr.load_and_play().await;
+            } else {
+                // Subsequent taps: trigger AudioContext resume
+                audio_mgr.on_tap_after_start();
+            }
         }
 
         splash.draw();
