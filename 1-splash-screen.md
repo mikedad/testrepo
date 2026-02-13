@@ -163,7 +163,8 @@ Audio starts automatically on load. If the browser blocks autoplay, the audio wi
 - [ ] Implement real-time synth via `cpal` audio callback in `audio.rs`
 - [ ] Generate square, triangle, and noise waveforms sample-by-sample
 - [ ] Loop song seamlessly when end is reached
-- [ ] Start audio stream on first user interaction (browser autoplay policy)
+- [ ] Start audio stream automatically on load (fallback: on first touch/click)
+- [ ] Use touch input — "Tap to continue" (iPad compatible)
 - [ ] Create `web/index.html` wrapper
 - [ ] Test in browser via WASM
 - [ ] Deploy to GitHub Pages
