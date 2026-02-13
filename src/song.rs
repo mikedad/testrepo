@@ -163,7 +163,131 @@ pub const DRUMS: &[Note] = &[
     Note::new(300.0, E, 0.2),
 ];
 
-/// Total loop duration in seconds (sum of melody durations).
+/// Total duration of a channel in seconds.
+pub fn channel_duration(notes: &[Note]) -> f32 {
+    notes.iter().map(|n| n.duration).sum()
+}
+
+/// Total loop duration in seconds (based on melody).
 pub fn loop_duration() -> f32 {
-    MELODY.iter().map(|n| n.duration).sum()
+    channel_duration(MELODY)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn note_new_sets_fields() {
+        let n = Note::new(440.0, 0.5, 0.8);
+        assert_eq!(n.freq, 440.0);
+        assert_eq!(n.duration, 0.5);
+        assert_eq!(n.volume, 0.8);
+    }
+
+    #[test]
+    fn note_rest_is_silent() {
+        let r = Note::rest(0.25);
+        assert_eq!(r.freq, 0.0);
+        assert_eq!(r.duration, 0.25);
+        assert_eq!(r.volume, 0.0);
+    }
+
+    #[test]
+    fn loop_duration_is_positive() {
+        let dur = loop_duration();
+        assert!(dur > 0.0, "loop duration should be positive, got {}", dur);
+    }
+
+    #[test]
+    fn loop_duration_is_reasonable_length() {
+        let dur = loop_duration();
+        // Spec says 15-30 seconds
+        assert!(dur >= 10.0, "loop too short: {}s", dur);
+        assert!(dur <= 40.0, "loop too long: {}s", dur);
+    }
+
+    #[test]
+    fn melody_has_notes() {
+        assert!(!MELODY.is_empty());
+    }
+
+    #[test]
+    fn bass_has_notes() {
+        assert!(!BASS.is_empty());
+    }
+
+    #[test]
+    fn drums_has_notes() {
+        assert!(!DRUMS.is_empty());
+    }
+
+    #[test]
+    fn all_note_durations_are_positive() {
+        for (name, channel) in [("melody", MELODY), ("bass", BASS), ("drums", DRUMS)] {
+            for (i, note) in channel.iter().enumerate() {
+                assert!(
+                    note.duration > 0.0,
+                    "{} note {} has non-positive duration: {}",
+                    name, i, note.duration
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn all_note_volumes_in_range() {
+        for (name, channel) in [("melody", MELODY), ("bass", BASS), ("drums", DRUMS)] {
+            for (i, note) in channel.iter().enumerate() {
+                assert!(
+                    note.volume >= 0.0 && note.volume <= 1.0,
+                    "{} note {} has out-of-range volume: {}",
+                    name, i, note.volume
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn all_note_frequencies_non_negative() {
+        for (name, channel) in [("melody", MELODY), ("bass", BASS), ("drums", DRUMS)] {
+            for (i, note) in channel.iter().enumerate() {
+                assert!(
+                    note.freq >= 0.0,
+                    "{} note {} has negative frequency: {}",
+                    name, i, note.freq
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn melody_and_bass_durations_match() {
+        let melody_dur = channel_duration(MELODY);
+        let bass_dur = channel_duration(BASS);
+        let diff = (melody_dur - bass_dur).abs();
+        assert!(
+            diff < 0.5,
+            "melody ({}s) and bass ({}s) durations differ by {}s",
+            melody_dur, bass_dur, diff
+        );
+    }
+
+    #[test]
+    fn melody_contains_no_silence_only() {
+        let has_audible = MELODY.iter().any(|n| n.freq > 0.0 && n.volume > 0.0);
+        assert!(has_audible, "melody should have at least one audible note");
+    }
+
+    #[test]
+    fn bass_contains_no_silence_only() {
+        let has_audible = BASS.iter().any(|n| n.freq > 0.0 && n.volume > 0.0);
+        assert!(has_audible, "bass should have at least one audible note");
+    }
+
+    #[test]
+    fn drums_contains_no_silence_only() {
+        let has_audible = DRUMS.iter().any(|n| n.freq > 0.0 && n.volume > 0.0);
+        assert!(has_audible, "drums should have at least one audible note");
+    }
 }
