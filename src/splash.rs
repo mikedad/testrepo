@@ -15,13 +15,17 @@ const SKIN: Color = Color::new(0.87, 0.72, 0.53, 1.0);
 pub struct SplashScreen {
     time: f32,
     user_interacted: bool,
+    swing_timer: f32, // >0 means sword is swinging
 }
+
+const SWING_DURATION: f32 = 0.5;
 
 impl SplashScreen {
     pub fn new() -> Self {
         Self {
             time: 0.0,
             user_interacted: false,
+            swing_timer: 0.0,
         }
     }
 
@@ -32,12 +36,18 @@ impl SplashScreen {
     pub fn update(&mut self) {
         self.time += get_frame_time();
 
+        // Tick down sword swing
+        if self.swing_timer > 0.0 {
+            self.swing_timer -= get_frame_time();
+        }
+
         // Touch, click, or key — any interaction counts (iPad + desktop)
         if is_mouse_button_pressed(MouseButton::Left)
-            || !touches().is_empty()
+            || touches().iter().any(|t| t.phase == TouchPhase::Started)
             || get_last_key_pressed().is_some()
         {
             self.user_interacted = true;
+            self.swing_timer = SWING_DURATION;
         }
     }
 
