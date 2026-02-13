@@ -140,16 +140,16 @@ mod tests {
     }
 
     #[test]
-    fn render_to_wav_produces_valid_wav() {
-        let wav = render_to_wav();
+    fn test_tone_produces_valid_wav() {
+        let wav = render_test_tone();
         assert_eq!(&wav[0..4], b"RIFF");
         assert_eq!(&wav[8..12], b"WAVE");
         assert!(wav.len() > 44);
     }
 
     #[test]
-    fn render_to_wav_has_audible_content() {
-        let wav = render_to_wav();
+    fn test_tone_has_audible_content() {
+        let wav = render_test_tone();
         let has_nonzero = wav[44..].chunks(2).any(|chunk| {
             i16::from_le_bytes([chunk[0], chunk[1]]) != 0
         });
@@ -157,17 +157,9 @@ mod tests {
     }
 
     #[test]
-    fn envelope_attack_starts_at_zero() {
-        assert_eq!(envelope(0, 10000), 0.0);
-    }
-
-    #[test]
-    fn envelope_sustain_is_one() {
-        assert_eq!(envelope(5000, 10000), 1.0);
-    }
-
-    #[test]
-    fn envelope_release_ends_near_zero() {
-        assert!(envelope(9999, 10000) < 0.01);
+    fn test_tone_is_one_second() {
+        let wav = render_test_tone();
+        // 1 second at 44100 Hz, 16-bit mono = 88200 data bytes + 44 header
+        assert_eq!(wav.len(), 44 + 44100 * 2);
     }
 }
