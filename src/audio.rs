@@ -1,4 +1,3 @@
-use crate::song::{self, Note};
 use macroquad::audio::{load_sound_from_bytes, play_sound, PlaySoundParams, Sound};
 
 const SAMPLE_RATE: u32 = 44100;
@@ -8,18 +7,20 @@ pub struct AudioManager {
     sound: Option<Sound>,
     status: String,
     started: bool,
+    resumed: bool,
 }
 
 impl AudioManager {
     /// Generate WAV bytes on startup. Does NOT load into audio system yet.
     pub fn new() -> Self {
-        let wav_bytes = render_to_wav();
+        let wav_bytes = render_test_tone();
         let len = wav_bytes.len();
         Self {
             wav_bytes,
             sound: None,
-            status: format!("audio: wav ready ({} bytes), waiting for tap", len),
+            status: format!("audio: TEST TONE wav ready ({} bytes), waiting for tap", len),
             started: false,
+            resumed: false,
         }
     }
 
@@ -34,12 +35,26 @@ impl AudioManager {
 
         match load_sound_from_bytes(&self.wav_bytes).await {
             Ok(sound) => {
-                play_sound(&sound, PlaySoundParams { looped: true, volume: 0.6 });
+                play_sound(&sound, PlaySoundParams { looped: true, volume: 1.0 });
                 self.sound = Some(sound);
-                self.status = "audio: playing".to_string();
+                self.status = "audio: playing (tap again to resume)".to_string();
             }
             Err(e) => {
                 self.status = format!("audio: load error: {}", e);
+            }
+        }
+    }
+
+    /// Call on every tap after audio has started, to trigger AudioContext resume.
+    pub fn on_tap_after_start(&mut self) {
+        if self.started && !self.resumed {
+            if let Some(ref sound) = self.sound {
+                // Re-issue play_sound on second tap — this happens in a direct
+                // user gesture context, so the AudioContext resume listeners
+                // in mq_js_bundle.js should fire.
+                play_sound(sound, PlaySoundParams { looped: true, volume: 1.0 });
+                self.resumed = true;
+                self.status = "audio: playing (resumed)".to_string();
             }
         }
     }
@@ -53,20 +68,19 @@ impl AudioManager {
     }
 }
 
-/// Render the intro song from note data into a complete WAV byte buffer.
-fn render_to_wav() -> Vec<u8> {
-    let duration = song::loop_duration();
-    let num_samples = (duration * SAMPLE_RATE as f32) as usize;
-    let mut buffer = vec![0.0f32; num_samples];
-
-    render_channel(&mut buffer, song::MELODY, Waveform::Square);
-    render_channel(&mut buffer, song::BASS, Waveform::Triangle);
-    render_channel(&mut buffer, song::DRUMS, Waveform::Noise);
-
+/// Generate a simple 1-second 440Hz sine wave as WAV.
+/// This is the simplest possible audio test — if this doesn't play,
+/// the issue is in macroquad's audio pipeline on Safari, not our song data.
+fn render_test_tone() -> Vec<u8> {
+    let duration_secs = 1.0f32;
+    let freq = 440.0f32;
+    let num_samples = (duration_secs * SAMPLE_RATE as f32) as usize;
     let mut samples = Vec::with_capacity(num_samples);
-    for &s in &buffer {
-        let clamped = s.clamp(-1.0, 1.0);
-        samples.push((clamped * 32767.0) as i16);
+
+    for i in 0..num_samples {
+        let t = i as f32 / SAMPLE_RATE as f32;
+        let sample = (2.0 * std::f32::consts::PI * freq * t).sin();
+        samples.push((sample * 32767.0) as i16);
     }
 
     encode_wav(&samples, SAMPLE_RATE)
