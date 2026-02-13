@@ -153,8 +153,8 @@ The `AudioContext` is created on first user keypress/click. This satisfies the b
 | `Cargo.toml` | Project config, macroquad dependency |
 | `src/main.rs` | Entry point, game loop, splash screen state |
 | `src/splash.rs` | Splash screen rendering and animation logic |
-| `src/audio.rs` | Audio loading and playback |
-| `assets/audio/intro.ogg` | 8-bit intro song |
+| `src/audio.rs` | WebAudio synthesizer, note scheduling, playback |
+| `src/song.rs` | Intro song note data (melody, bass, drums arrays) |
 | `web/index.html` | HTML wrapper for WASM |
 
 ## Success Criteria
