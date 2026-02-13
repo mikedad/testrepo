@@ -164,10 +164,10 @@ The splash screen uses touch-friendly input — "Tap to continue" instead of "Pr
 - [ ] Add idle animations (breathing, sway, shimmer)
 - [ ] Add pulsing "Press any key" text
 - [ ] Define intro song as note data (melody, bass, drums) in `song.rs`
-- [ ] Implement real-time synth via `cpal` audio callback in `audio.rs`
-- [ ] Generate square, triangle, and noise waveforms sample-by-sample
-- [ ] Loop song seamlessly when end is reached
-- [ ] Start audio stream automatically on load (fallback: on first touch/click)
+- [ ] Implement `render_to_wav()` in `audio.rs` — synthesize WAV in memory from note data
+- [ ] Generate square, triangle, and noise waveforms with per-note envelopes
+- [ ] Load WAV via `macroquad::audio::load_sound_from_bytes()`
+- [ ] Play immediately on load + retry on first touch/click (autoplay handling)
 - [ ] Use touch input — "Tap to continue" (iPad compatible)
 - [ ] Create `web/index.html` wrapper
 - [ ] Test in browser via WASM
