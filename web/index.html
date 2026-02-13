@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Creator</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #1a1a2e;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="glcanvas" tabindex="1"></canvas>
+    <script>
+        // macroquad WASM loader
+        var gl;
+        var wasm_memory;
+
+        // These are the JS functions macroquad expects to be available
+        register_plugins = (importObject) => {
+            // web-sys needs these for WebAudio
+            importObject.env = importObject.env || {};
+        };
+
+        miniquad_add_plugin = (plugin) => {};
+
+        load = async () => {
+            const canvas = document.getElementById("glcanvas");
+            const importObject = {
+                env: {}
+            };
+
+            // Load the macroquad JS glue
+            const gl_js = await fetch("./mq_js_bundle.js");
+            const gl_js_text = await gl_js.text();
+            eval(gl_js_text);
+
+            const wasm = await load("./dungeon_creator.wasm");
+        };
+
+        load();
+    </script>
+</body>
+</html>
