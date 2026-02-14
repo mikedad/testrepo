@@ -62,7 +62,6 @@ impl SplashScreen {
         self.draw_warrior(sw * 0.2, sh * 0.55, px);
         self.draw_monster(sw * 0.5, sh * 0.55, px);
         self.draw_treasure(sw * 0.8, sh * 0.55, px);
-        self.draw_build_timestamp(sw, sh);
     }
 
     /// Draw the progress bar for dungeon generation.
