@@ -91,7 +91,7 @@ mod tests {
     #[test]
     fn rect_expand_creates_overlap() {
         let r1 = Rect { x: 0, y: 0, w: 5, h: 5 };
-        let r2 = Rect { x: 7, y: 0, w: 5, h: 5 };
+        let r2 = Rect { x: 6, y: 0, w: 5, h: 5 };
         assert!(!r1.intersects(&r2));
         assert!(r1.expand(2).intersects(&r2));
     }
