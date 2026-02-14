@@ -569,6 +569,28 @@ mod tests {
     }
 
     #[test]
+    fn spawn_point_is_on_floor() {
+        let gen = run_generator(12345);
+        let spawn = gen.map.find_spawn_point();
+        assert_eq!(
+            gen.map.get(spawn.x, spawn.y),
+            Some(Tile::Floor),
+            "spawn {:?} is not a floor tile",
+            spawn
+        );
+    }
+
+    #[test]
+    fn spawn_point_near_center() {
+        let gen = run_generator(12345);
+        let spawn = gen.map.find_spawn_point();
+        let cx = GRID_WIDTH as i32 / 2;
+        let cy = GRID_HEIGHT as i32 / 2;
+        let dist = (spawn.x - cx).abs() + (spawn.y - cy).abs();
+        assert!(dist < 20, "spawn {:?} too far from center (dist={})", spawn, dist);
+    }
+
+    #[test]
     fn dungeon_has_floor_tiles() {
         let gen = run_generator(9999);
         let floor_count = (0..GRID_HEIGHT)
