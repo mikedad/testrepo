@@ -167,6 +167,7 @@ fn draw_hero(sx: f32, sy: f32, frame: u8, moving: bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::Rect;
 
     fn make_test_map() -> TileMap {
         let mut map = TileMap::new();
