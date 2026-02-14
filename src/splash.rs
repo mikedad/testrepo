@@ -412,15 +412,6 @@ impl SplashScreen {
         draw_text(label, cx - dims.width / 2.0, cy + s * 3.0, px * 5.0, GOLD);
     }
 
-    fn draw_prompt(&self, sw: f32, sh: f32) {
-        let alpha = ((self.time * 2.0).sin() * 0.4 + 0.6) as f32;
-        let color = Color::new(1.0, 1.0, 1.0, alpha);
-        let text = "~ Tap to continue ~";
-        let font_size = (sw / 320.0 * 7.0).max(14.0);
-        let dims = measure_text(text, None, font_size as u16, 1.0);
-        draw_text(text, (sw - dims.width) / 2.0, sh * 0.88, font_size, color);
-    }
-
     fn draw_build_timestamp(&self, sw: f32, sh: f32) {
         let ts = env!("BUILD_TIMESTAMP");
         let font_size = (sw / 320.0 * 5.0).max(12.0);
