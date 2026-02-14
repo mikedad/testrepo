@@ -1,5 +1,6 @@
 mod audio;
 mod dungeon;
+mod player;
 mod renderer;
 mod song;
 mod splash;
@@ -7,7 +8,9 @@ mod types;
 
 use dungeon::DungeonGenerator;
 use macroquad::prelude::*;
+use player::Player;
 use splash::SplashScreen;
+use types::*;
 
 fn window_conf() -> Conf {
     Conf {
@@ -26,6 +29,7 @@ enum GameState {
     },
     Playing {
         map: dungeon::TileMap,
+        player: Player,
     },
 }
 
@@ -61,7 +65,11 @@ async fn main() {
                     if splash.check_play_button_tap() {
                         // Transition to playing
                         let gen = std::mem::replace(generator, DungeonGenerator::new());
-                        state = GameState::Playing { map: gen.map };
+                        let spawn = gen.map.find_spawn_point();
+                        state = GameState::Playing {
+                            map: gen.map,
+                            player: Player::new(spawn),
+                        };
                         next_frame().await;
                         continue;
                     }
@@ -71,14 +79,46 @@ async fn main() {
 
                 draw_build_timestamp();
             }
-            GameState::Playing { map } => {
+            GameState::Playing { map, player } => {
+                let dt = get_frame_time();
+
+                // Handle touch/click to set target
+                if let Some(target) = get_touch_target() {
+                    player.set_target(target);
+                }
+
+                player.update(dt, map);
+
                 renderer::draw_dungeon(map);
+                player.draw();
                 draw_build_timestamp();
             }
         }
 
         next_frame().await;
     }
+}
+
+/// Convert touch/click screen position to grid coordinates.
+fn get_touch_target() -> Option<Pos> {
+    // Check touch
+    for touch in touches() {
+        if touch.phase == TouchPhase::Started {
+            let gx = (touch.position.x / TILE_SIZE) as i32;
+            let gy = (touch.position.y / TILE_SIZE) as i32;
+            return Some(Pos { x: gx, y: gy });
+        }
+    }
+
+    // Check mouse click
+    if is_mouse_button_pressed(MouseButton::Left) {
+        let (mx, my) = mouse_position();
+        let gx = (mx / TILE_SIZE) as i32;
+        let gy = (my / TILE_SIZE) as i32;
+        return Some(Pos { x: gx, y: gy });
+    }
+
+    None
 }
 
 fn draw_build_timestamp() {
