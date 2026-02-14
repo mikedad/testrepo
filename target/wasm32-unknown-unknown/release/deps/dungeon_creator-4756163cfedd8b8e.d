@@ -1,13 +1,14 @@
-/worktrees/testrepo/finn/target/wasm32-unknown-unknown/release/deps/dungeon_creator-4756163cfedd8b8e.d: src/main.rs src/audio.rs src/dungeon.rs src/renderer.rs src/song.rs src/splash.rs src/types.rs
+/worktrees/testrepo/finn/target/wasm32-unknown-unknown/release/deps/dungeon_creator-4756163cfedd8b8e.d: src/main.rs src/audio.rs src/dungeon.rs src/player.rs src/renderer.rs src/song.rs src/splash.rs src/types.rs
 
-/worktrees/testrepo/finn/target/wasm32-unknown-unknown/release/deps/dungeon_creator-4756163cfedd8b8e.wasm: src/main.rs src/audio.rs src/dungeon.rs src/renderer.rs src/song.rs src/splash.rs src/types.rs
+/worktrees/testrepo/finn/target/wasm32-unknown-unknown/release/deps/dungeon_creator-4756163cfedd8b8e.wasm: src/main.rs src/audio.rs src/dungeon.rs src/player.rs src/renderer.rs src/song.rs src/splash.rs src/types.rs
 
 src/main.rs:
 src/audio.rs:
 src/dungeon.rs:
+src/player.rs:
 src/renderer.rs:
 src/song.rs:
 src/splash.rs:
 src/types.rs:
 
-# env-dep:BUILD_TIMESTAMP=2026-02-14 15:26:15 UTC
+# env-dep:BUILD_TIMESTAMP=2026-02-14 15:41:03 UTC
