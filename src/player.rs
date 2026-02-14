@@ -1,5 +1,5 @@
 use crate::dungeon::TileMap;
-use crate::types::*;
+use crate::types::{Pos, Tile, TILE_SIZE};
 use macroquad::prelude::*;
 
 const STEP_INTERVAL: f32 = 0.15; // seconds between tile steps
