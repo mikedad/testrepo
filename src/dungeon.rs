@@ -36,6 +36,39 @@ impl TileMap {
         }
     }
 
+    /// Find the floor tile closest to the map center.
+    pub fn find_spawn_point(&self) -> Pos {
+        let cx = GRID_WIDTH as i32 / 2;
+        let cy = GRID_HEIGHT as i32 / 2;
+
+        // Search outward in expanding rings
+        for radius in 0..((GRID_WIDTH + GRID_HEIGHT) as i32) {
+            for dy in -radius..=radius {
+                for dx in -radius..=radius {
+                    if dx.abs() + dy.abs() != radius {
+                        continue; // Only check the ring perimeter
+                    }
+                    let x = cx + dx;
+                    let y = cy + dy;
+                    if self.get(x, y) == Some(Tile::Floor) {
+                        return Pos { x, y };
+                    }
+                }
+            }
+        }
+
+        // Fallback: first floor tile found
+        for y in 0..GRID_HEIGHT as i32 {
+            for x in 0..GRID_WIDTH as i32 {
+                if self.get(x, y) == Some(Tile::Floor) {
+                    return Pos { x, y };
+                }
+            }
+        }
+
+        Pos { x: cx, y: cy }
+    }
+
     fn carve_h_line(&mut self, x1: i32, x2: i32, y: i32) {
         let (start, end) = if x1 < x2 { (x1, x2) } else { (x2, x1) };
         for x in start..=end {
