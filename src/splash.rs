@@ -62,8 +62,130 @@ impl SplashScreen {
         self.draw_warrior(sw * 0.2, sh * 0.55, px);
         self.draw_monster(sw * 0.5, sh * 0.55, px);
         self.draw_treasure(sw * 0.8, sh * 0.55, px);
-        self.draw_prompt(sw, sh);
         self.draw_build_timestamp(sw, sh);
+    }
+
+    /// Draw the progress bar for dungeon generation.
+    pub fn draw_progress_bar(&self, progress: f32) {
+        let sw = screen_width();
+        let sh = screen_height();
+        let px = (sw / 320.0).max(1.0);
+
+        let bar_y = sh * 0.72;
+
+        // Label
+        let label = "Generating Level...";
+        let font_size = (px * 6.0).max(12.0);
+        let dims = measure_text(label, None, font_size as u16, 1.0);
+        draw_text(label, (sw - dims.width) / 2.0, bar_y - px * 4.0, font_size, SILVER);
+
+        // Bar background
+        let bar_w = px * 100.0;
+        let bar_h = px * 6.0;
+        let bar_x = (sw - bar_w) / 2.0;
+
+        // Dark background
+        draw_rectangle(bar_x, bar_y, bar_w, bar_h, Color::new(0.1, 0.1, 0.15, 1.0));
+        // Fill
+        let fill_w = bar_w * progress.clamp(0.0, 1.0);
+        draw_rectangle(bar_x, bar_y, fill_w, bar_h, GOLD);
+        // Border
+        draw_rectangle(bar_x, bar_y, bar_w, 1.0, Color::new(0.5, 0.5, 0.5, 1.0));
+        draw_rectangle(bar_x, bar_y + bar_h - 1.0, bar_w, 1.0, Color::new(0.5, 0.5, 0.5, 1.0));
+        draw_rectangle(bar_x, bar_y, 1.0, bar_h, Color::new(0.5, 0.5, 0.5, 1.0));
+        draw_rectangle(bar_x + bar_w - 1.0, bar_y, 1.0, bar_h, Color::new(0.5, 0.5, 0.5, 1.0));
+
+        // Percentage text
+        let pct_text = format!("{}%", (progress * 100.0) as u32);
+        let pct_size = (px * 5.0).max(10.0);
+        let pct_dims = measure_text(&pct_text, None, pct_size as u16, 1.0);
+        let text_color = if progress > 0.5 {
+            Color::new(0.1, 0.1, 0.1, 1.0)
+        } else {
+            SILVER
+        };
+        draw_text(
+            &pct_text,
+            (sw - pct_dims.width) / 2.0,
+            bar_y + bar_h / 2.0 + pct_dims.height / 2.0,
+            pct_size,
+            text_color,
+        );
+    }
+
+    /// Draw the "PLAY!" button with pulse animation.
+    pub fn draw_play_button(&self) {
+        let sw = screen_width();
+        let sh = screen_height();
+        let px = (sw / 320.0).max(1.0);
+
+        let btn_w = px * 40.0;
+        let btn_h = px * 12.0;
+        let btn_x = (sw - btn_w) / 2.0;
+        let btn_y = sh * 0.72;
+
+        // Glow pulse
+        let pulse = (self.time * 3.0).sin() * 0.15 + 1.0;
+        let glow_expand = px * 2.0 * pulse;
+        let glow_alpha = (self.time * 2.0).sin() * 0.2 + 0.3;
+        draw_rectangle(
+            btn_x - glow_expand,
+            btn_y - glow_expand,
+            btn_w + glow_expand * 2.0,
+            btn_h + glow_expand * 2.0,
+            Color::new(1.0, 0.843, 0.0, glow_alpha),
+        );
+
+        // Button background
+        draw_rectangle(btn_x, btn_y, btn_w, btn_h, Color::new(0.15, 0.15, 0.25, 1.0));
+        // Border
+        draw_rectangle(btn_x, btn_y, btn_w, 2.0, GOLD);
+        draw_rectangle(btn_x, btn_y + btn_h - 2.0, btn_w, 2.0, GOLD);
+        draw_rectangle(btn_x, btn_y, 2.0, btn_h, GOLD);
+        draw_rectangle(btn_x + btn_w - 2.0, btn_y, 2.0, btn_h, GOLD);
+
+        // Text
+        let text = "PLAY!";
+        let font_size = (px * 10.0).max(20.0);
+        let dims = measure_text(text, None, font_size as u16, 1.0);
+        draw_text(
+            text,
+            btn_x + (btn_w - dims.width) / 2.0,
+            btn_y + (btn_h + dims.height) / 2.0,
+            font_size,
+            GOLD,
+        );
+    }
+
+    /// Check if the Play button was tapped/clicked this frame.
+    pub fn check_play_button_tap(&self) -> bool {
+        let sw = screen_width();
+        let sh = screen_height();
+        let px = (sw / 320.0).max(1.0);
+
+        let btn_w = px * 40.0;
+        let btn_h = px * 12.0;
+        let btn_x = (sw - btn_w) / 2.0;
+        let btn_y = sh * 0.72;
+
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let (mx, my) = mouse_position();
+            if mx >= btn_x && mx <= btn_x + btn_w && my >= btn_y && my <= btn_y + btn_h {
+                return true;
+            }
+        }
+
+        for touch in touches() {
+            if touch.phase == TouchPhase::Started {
+                let tx = touch.position.x;
+                let ty = touch.position.y;
+                if tx >= btn_x && tx <= btn_x + btn_w && ty >= btn_y && ty <= btn_y + btn_h {
+                    return true;
+                }
+            }
+        }
+
+        false
     }
 
     fn draw_title(&self, sw: f32, sh: f32, px: f32) {
