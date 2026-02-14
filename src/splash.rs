@@ -411,12 +411,4 @@ impl SplashScreen {
         draw_text(label, cx - dims.width / 2.0, cy + s * 3.0, px * 5.0, GOLD);
     }
 
-    fn draw_build_timestamp(&self, sw: f32, sh: f32) {
-        let ts = env!("BUILD_TIMESTAMP");
-        let font_size = (sw / 320.0 * 5.0).max(12.0);
-        let color = Color::new(1.0, 1.0, 1.0, 0.5);
-        let dims = measure_text(ts, None, font_size as u16, 1.0);
-        draw_text(ts, (sw - dims.width) / 2.0, sh * 0.83, font_size, color);
-    }
-
 }
